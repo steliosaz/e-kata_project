@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map User Location</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <style>
+        #map {height: 150px;
+             height: 500px;
+}   
+        
+    </style>
+</head>
+<body>
+    <h1>Map User Location</h1>
+    <div id="map"></div>
+    <input type="text" id="tagNameInput" placeholder="Enter tag name">
+    <button id="createMarkersButton">Create Markers</button>
+   
+
+<script>
+    var map = L.map('map')
+    map.setView([38.2462420, 21.7350847], 16);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+  
+    
+//markers
+  let marker = L.marker([38.246242, 21.7350847]).addTo(map);
+  marker.bindPopup("<b>Πλατεία Γεωργίου</b>");
+
+  if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+          function(position) {
+              var latitude = position.coords.latitude;
+              var longitude = position.coords.longitude;
+              
+              // Create a marker with the current location coordinates
+              var marker = L.marker([latitude, longitude], { draggable: true }).addTo(map);
+              marker.bindPopup("<b>Your Location</b>").openPopup();
+              
+              // Pan the map to the current location
+              map.panTo([latitude, longitude]);
+          },
+          function(error) {
+              console.log("Error getting current position:", error);
+          }
+      );
+  } else {
+      console.log("Geolocation is not supported by this browser.");
+  }
+
+  // Add event listener to the button
+  document.getElementById('createMarkersButton').addEventListener('click', createMarkers);
+
+  // Function to handle button click
+  function createMarkers() {
+      // Get the user input from the input field
+      const tagName = document.getElementById('tagNameInput').value;
+
+      // Define the Overpass API query
+      const patrasCoordinates = '38.2468,21.7347,38.3052,21.8031';
+      const overpassQuery = `[out:json][timeout:25];
+        (
+          node["shop"="supermarket"](${patrasCoordinates});
+          node["shop"="convenience"](${patrasCoordinates});
+        );
+        out center;`;
+
+      // Make the Overpass API request using Fetch API
+      fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'data=' + encodeURIComponent(overpassQuery)
+      })
+          .then(response => response.json())
+          .then(data => {
+              const results = data.elements;
+              const nodesList = [];
+
+              // Process the results
+              results.forEach(result => {
+                  const latitude = result.lat;
+                  const longitude = result.lon;
+                  const tags = result.tags; 
+
+                  const node = {
+                      latitude,
+                      longitude,
+                      tags
+                  };
+                  
+                  nodesList.push(node);
+              });
+
+              // Filter the nodesList based on the tag name
+              const filteredNodes = nodesList.filter(node => node.tags && node.tags.name === tagName);
+
+              // Create markers for the filtered nodes and add them to the map
+              filteredNodes.forEach(node => {
+                  const { latitude, longitude } = node;
+                  const marker = L.marker([latitude, longitude]).addTo(map);
+              });
+          })
+          .catch(error => {
+              console.log('Error:', error);
+          });
+  }
+</script>
+</html>

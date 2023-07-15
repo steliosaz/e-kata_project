@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Products Data</title>
+</head>
+<body>
+    <a href="/logout">Logout</a>
+  <h1>Upload Products Data</h1>
+  <input type="file" id="file-input">
+  <button id="upload-btn">Upload</button>
+  <script>
+    document.getElementById("upload-btn").addEventListener("click", function() {
+        var fileInput = document.getElementById("file-input");
+        var file = fileInput.files[0];
+      
+        var reader = new FileReader();
+      
+        reader.onload = function(e) {
+          var contents = e.target.result;
+          var data = JSON.parse(contents);
+          // Use the data from the JSON file
+          fetch('http://localhost:3000/upload', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+        .then(response => response.json())
+        .then(data => {
+          // Handle the response from the server
+          console.log(data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+      
+          console.log(data);
+        };
+      
+        reader.onerror = function(e) {
+          console.error('Error:', e.target.error);
+        };
+        
+        reader.readAsText(file);
+      });
+    </script>
+</body>
+</html>

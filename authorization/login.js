@@ -1,5 +1,7 @@
 const db = require('../services/connectdb');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
+secretKey = process.env.SECRETKEY
 
 exports.login = async(req, res, next) => {
     const { username, password } = req.body;

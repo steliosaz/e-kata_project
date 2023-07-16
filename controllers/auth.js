@@ -4,6 +4,6 @@ const { login } = require('../authorization/login');
 const { register } = require('../authorization/register');
 
 router.route('/login').post(login)
-router.route('/login').post(register)
+router.route('/register').post(register)
 
 module.exports = router;

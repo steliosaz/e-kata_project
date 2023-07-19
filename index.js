@@ -27,6 +27,12 @@ app.use(cookieParser());
 app.use('/', require('./controllers/routing'))
 app.use('/api/auth', require('./controllers/auth'))
 app.use('/api/admin', require('./controllers/admin'))
+app.use('/', require('./controllers/users'))
+
+app.get('/redirectToMap', (req, res) => {
+  res.sendFile(__dirname + '/views/map.html');
+});
+
 
 
 // Start the server

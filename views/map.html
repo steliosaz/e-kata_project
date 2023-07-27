@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    
     <title>Map User Location</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -17,17 +18,21 @@
         #map {height: 150px;
              height: 500px;
 }   
-        
     </style>
 </head>
 <body>
+    
     <h1>Map User Location</h1>
     <div id="map"></div>
     <input type="text" id="tagNameInput" placeholder="Enter tag name">
     <button id="createMarkersButton">Create Markers</button>
-   
-
+    <div class="productsTableContainer"></div>
+    <p id="errorMsg" style="color:red;"></p>
+    </div>
+    <div class="productPriceFormContainer" style="display: none;"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.4.0/jsrsasign-all-min.js"></script>
     <script>
+        
         var map = L.map('map')
         map.setView([38.2462420, 21.7350847], 16);
     
@@ -64,7 +69,9 @@
     
         // Add event listener to the button
         document.getElementById('createMarkersButton').addEventListener('click', createMarkers);
-    
+        
+        //last markerclicked
+        let lastClickedMarkerName;
         // Function to handle button click
         function createMarkers() {
             // Get the user input from the input field
@@ -119,15 +126,21 @@
                             <p>Όνομα: ${node.tags.name}</p>
                             <button onclick="addOffer()">Προσθήκη προσφοράς</button>
                             </div>`;
-    
+                        
                         marker.bindPopup(popupContent).openPopup();
+                        marker.on('click', function (e) {
+                            lastClickedMarkerName = node.tags.name;
+                        // Do whatever you want to do with the clickedMarkerTagsName here
+                        //otherFunction(clickedMarkerTagsName);
+                        
+        });
                     });
                 })
                 .catch(error => {
                     console.log('Error:', error);
                 });
         }
-    
+        
         // Function to handle the "Προσθήκη προσφοράς" button click
         function addOffer() {
             fetch('/api/categories')
@@ -141,14 +154,24 @@
     
                     const dropdownList = document.createElement('select');
                     dropdownList.id = 'categoryDropdown';
-                    dropdownList.addEventListener('change', loadSubcategories);
-    
+                    // Use a Set to store unique category names
+                    const uniqueCategories = new Set();
+
                     categories.forEach(category => {
+                        uniqueCategories.add(category.category);
+                    });
+
+                    // Convert the Set to an array and create options for the dropdown
+                    const uniqueCategoriesArray = Array.from(uniqueCategories);
+                    uniqueCategoriesArray.forEach(categoryName => {
                         const option = document.createElement('option');
-                        option.value = category.category;
-                        option.text = category.category;
+                        option.value = categoryName;
+                        option.text = categoryName;
                         dropdownList.appendChild(option);
                     });
+
+                    // Add event listener to load subcategories
+                    dropdownList.addEventListener('change', loadSubcategories);
     
                     modalContent.appendChild(dropdownList);
                     modal.appendChild(modalContent);
@@ -161,38 +184,215 @@
                 });
         }
         // Function to load subcategories based on the selected category
+        let selectedProduct_id ;
         function loadSubcategories() {
             const selectedCategory = document.getElementById('categoryDropdown').value;
-    
+            
             fetch(`/api/subcategories?category=${selectedCategory}`)
                 .then(response => response.json())
                 .then(subcategories => {
                     const subcategoryDropdown = document.createElement('select');
                     subcategoryDropdown.id = 'subcategoryDropdown';
     
-                    subcategories.forEach(subcategory => {
-                        const option = document.createElement('option');
-                        option.value = subcategory.subcategory;
-                        option.text = subcategory.subcategory;
-                        subcategoryDropdown.appendChild(option);
-                        console.log(JSON.stringify(subcategory));
-                    });
-    
-                    // Clear any previously loaded subcategories
-                    const existingSubcategoryDropdown = document.getElementById('subcategoryDropdown');
-                    if (existingSubcategoryDropdown) {
-                        existingSubcategoryDropdown.remove();
-                    }
+                    // Use a Set to store unique subcategory names
+                const uniqueSubcategories = new Set();
+
+                subcategories.forEach(subcategory => {
+                    uniqueSubcategories.add(subcategory.subcategory);
+                });
+
+                // Convert the Set to an array and create options for the dropdown
+                const uniqueSubcategoriesArray = Array.from(uniqueSubcategories);
+                uniqueSubcategoriesArray.forEach(subcategoryName => {
+                    const option = document.createElement('option');
+                    option.value = subcategoryName;
+                    option.text = subcategoryName;
+                    subcategoryDropdown.appendChild(option);
+                });
+
+                // Clear any previously loaded subcategories
+                const existingSubcategoryDropdown = document.getElementById('subcategoryDropdown');
+                if (existingSubcategoryDropdown) {
+                    existingSubcategoryDropdown.remove();
+                }
     
                     // Append the new subcategory dropdown to the modal
                     const modalContent = document.querySelector('.modal-content');
                     modalContent.appendChild(subcategoryDropdown);
-                })
-                .catch(error => {
-                    console.log('Error:', error);
-                });
-        }
+                    // Attach an event listener to the subcategory dropdown to load products when a subcategory is selected
+                    document.getElementById('subcategoryDropdown').addEventListener('change', loadProducts);
+                })};
+        
+                function loadProducts() {
+                    const selectedSubcategory = document.getElementById('subcategoryDropdown').value;
+                    console.log('loadProducts triggered');
+                    fetch(`/api/products?subcategory=${selectedSubcategory}`)
+                        .then(response => response.json())
+                        .then(products => {
+                            // Create a new table
+                            const table = document.createElement('table');
+                            table.id = 'productsTable';
 
+                            // Create a table header row
+                            const headerRow = document.createElement('tr');
+                            const headerCell = document.createElement('th');
+                            headerCell.textContent = 'Product Name';
+                            headerRow.appendChild(headerCell);
+                            table.appendChild(headerRow);
+                            
+                            // Add a row for each product
+                            products.forEach(product => {
+                                const row = document.createElement('tr');
+                                const cell = document.createElement('td');
+                                cell.textContent = product.name;
+                                row.appendChild(cell);
+                                table.appendChild(row);
+                                // Add a click event listener to each product row
+                                row.addEventListener('click', () => {
+                                    console.log('product:',product)
+                                    selectedProduct_id = product.id
+                                    handleProductSelection(product); // Implement the selection logic
+                                });
+                            });
+
+                            // Clear any previously loaded products table
+                            const existingProductsTable = document.getElementById('productsTable');
+                            if (existingProductsTable) {
+                                existingProductsTable.remove();
+                            }
+
+                            // Append the new products table to the container
+                            const tableContainer = document.querySelector('.productsTableContainer');
+                            tableContainer.appendChild(table);
+                        });
+                }
+                    function handleProductSelection(selectedProduct) {
+                        
+                        // Get the form container
+                        const formContainer = document.querySelector('.productPriceFormContainer');
+
+                        // Clear the form container if there's anything in it
+                        formContainer.innerHTML = '';
+
+                        // Create the form and its elements
+                        const form = document.createElement('form');
+                        const label = document.createElement('label');
+                        const input = document.createElement('input');
+                        const submitButton = document.createElement('button');
+                        const errorMsg = document.createElement('div');
+                        const dateLabel = document.createElement('label');
+                        const dateInput = document.createElement('input');
+
+                        // Set properties and content of the form elements
+                        label.textContent = `Enter price for ${selectedProduct.name}: `;
+                        input.type = 'text';
+                        input.name = 'price';
+                        input.required = true;
+
+                        dateLabel.textContent = 'Enter date: ';
+                        dateInput.type = 'date'; // The 'date' input type renders a date-picker
+                        dateInput.name = 'date';
+                        dateInput.required = true;
+
+                        submitButton.type = 'submit';
+                        submitButton.textContent = 'Submit';
+
+                        
+                        // Append the label, input, and button to the form
+                        form.appendChild(label);
+                        form.appendChild(input);
+                        form.appendChild(submitButton);
+                        form.appendChild(errorMsg);
+
+                        form.appendChild(dateLabel);
+                        form.appendChild(dateInput);
+
+                        // Handle the form submission
+                        form.addEventListener('submit', (event) => {
+                            event.preventDefault();
+
+                            const priceInput = input.value;
+                            const dateInputValue = dateInput.value; // get date input value
+                            const pricePattern = /^\d+\.\d{2}$/;  // Accepts numbers in the format X.XX
+
+                            // If price doesn't match required format, log an error and return
+                            if (!pricePattern.test(priceInput)) {
+                                errorMsg.textContent = 'Invalid price entered. Please enter in the format X.XX';
+                                return;
+                            }
+
+                            // If date is not provided, log an error and return
+                            if (!dateInputValue) {
+                                errorMsg.textContent = 'Date is required.';
+                                return;
+                            }
+
+                            const price = parseFloat(priceInput);
+                            logPriceAndName(price, lastClickedMarkerName, selectedProduct.id, dateInputValue); 
+                            console.log(`Price for ${selectedProduct.name}: `, price);
+                            console.log(`Date: `, dateInputValue);
+                            // Add your logic here to handle the inputted price
+                            // For example, you might want to send it to your server
+                        });
+
+                        // Append the form to the form container and make it visible
+                        formContainer.appendChild(form);
+                        formContainer.style.display = 'block';
+                        }
+
+                        let user_id;
+                        function logPriceAndName(price, name, id, date) {
+                            console.log('date:',date)
+                            fetch(`/api/id?`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    user_id = data; // Store the decoded_id in a variable
+                                })
+                            fetch(`/api/prices?product_id=${id}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    let fetchedData = data;
+                                    let lastItem = fetchedData[fetchedData.length - 1];  // Access last item in the array
+                                    let lastweekItem = fetchedData[fetchedData.length - 5]; // 5 days earlier , mporw na to kanw 7 
+                                    console.log('Last item value: ', lastItem.value);
+                                    console.log('last week value:',lastweekItem.value);
+                                    // Check if price is less than 80% of the lastItem.value (which means it is 20% cheaper)
+                                    if (price < lastItem.value * 0.8) {
+                                        //50 points logo tou if (price < lastItem.value * 0.8)
+                                        fetch('/api/points', {
+                                            method: 'PUT',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({ userid: user_id.decodedId, points: 50 }),
+                                        })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            console.log('Response:', data);
+                                        })
+                                        .catch((error) => {
+                                            console.error('Error:', error);
+                                        });
+                                    }
+                                })
+                                .catch(error => console.error('Error:', error));
+                                fetch('/api/save/offer',{
+                                    method: 'POST',
+                                    headers:{
+                                        'Content-Type': 'application/json',
+                                    },
+                                    
+                                    //body: JSON.stringify({ shopname: name, offervalue: price, productid: id, startdate: date }),
+                                    body: JSON.stringify({ shopname: name, offervalue: price, productid: id, start_date: date}),
+                                })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        console.log('Response:', data);
+                                    })
+                                    .catch((error) => {
+                                        console.error('Error:', error);
+                                    });
+                        }
     </script>
     </body>
 </html>

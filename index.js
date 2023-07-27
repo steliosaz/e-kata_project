@@ -7,6 +7,7 @@ const mysql = require('mysql');
 const db = require('./services/connectdb');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const CircularJSON = require('circular-json');
 const { adminAuthMiddleware, userAuthMiddleware } = require('./auth/auth');
 
 // initializations
@@ -16,7 +17,6 @@ const secretKey = process.env.SECRETKEY;
 
 // uses
 app.use(express.json());
-app.use(express.static(__dirname));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: false })) // acess sta forms req.body.email etc.
@@ -28,6 +28,7 @@ app.use('/', require('./controllers/routing'))
 app.use('/api/auth', require('./controllers/auth'))
 app.use('/api/admin', require('./controllers/admin'))
 app.use('/', require('./controllers/users'))
+
 
 app.get('/redirectToMap', (req, res) => {
   res.sendFile(__dirname + '/views/map.html');

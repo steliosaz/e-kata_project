@@ -1,3 +1,6 @@
+const jwt = require('jsonwebtoken');
+const secretKey = process.env.SECRETKEY;
+
 const adminAuthMiddleware = (req, res, next) => {
     const token = req.cookies.token;
   
@@ -10,7 +13,6 @@ const adminAuthMiddleware = (req, res, next) => {
       const decoded = jwt.verify(token, secretKey);
   
       if (decoded.isAdmin) {
-        console.log('it works');
         next();
       } else {
         return res.status(403).json({ message: 'Access denied' });

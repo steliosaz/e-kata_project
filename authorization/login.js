@@ -2,7 +2,7 @@ const db = require('../services/connectdb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 secretKey = process.env.SECRETKEY
-
+let email;
 exports.login = async(req, res, next) => {
     const { username, password } = req.body;
 
@@ -29,7 +29,8 @@ exports.login = async(req, res, next) => {
                 res.status(500).json({ message: 'Internal server error' });
             } else if (results.length > 0) {
                 const tokenPayload = { userid: results[0].id, isAdmin: false };
-
+                email = results[0].email;
+                
                 jwt.sign(tokenPayload, secretKey, (err, token) => {
                     if (err) {
                         res.status(500).json({ message: 'Internal server error' });
@@ -45,3 +46,4 @@ exports.login = async(req, res, next) => {
         });
     }
 }
+console.log('unddasd',email)

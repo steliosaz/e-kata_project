@@ -1,11 +1,79 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Welcome to Users Page</title>
+<head>        
+    
+    <title>Welcome to Users Page</title> 
+    <style>
+        /* General styling for the body and header */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* Styling the dropdown container */
+        .dropdown-container {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        /* Styling the dropdown */
+        #pageSelect {
+            width: 200px;
+            height: 40px;
+            font-size: 16px;
+            border: none;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+        }
+    </style>
+
+    <script>
+        function redirectToPage() {
+            const selectElement = document.getElementById('pageSelect');
+            const selectedValue = selectElement.value;
+            
+            if (selectedValue === 'maps') {
+                window.location.href = '/redirectToMap';
+            } else if (selectedValue === 'offers_made') {
+                window.location.href = '/offers_history';
+            } else if (selectedValue === 'logout') {
+                window.location.href = '/logout';
+            }
+            else if(selectedValue === 'change'){
+                window.location.href = '/change'
+            }
+            else if(selectedValue === 'action_history'){
+                window.location.href = '/action_history'
+            }
+            // Add more else-if conditions for other options as needed
+        }
+    </script>
 </head>
 <body>
-    <a href="/logout">Logout</a>
     <h1>WELCOME TO USERS_PAGE</h1>
-    <a href="/redirectToMap"><button>Maps</button></a>
+
+    <div class="dropdown-container">
+        <select id="pageSelect" onchange="redirectToPage()">
+            <option value="" disabled selected>Select an option</option>
+            <option value="maps">Maps</option>
+            <option value="offers_made">Offers Made</option>
+            <option value="change">Change Credentials</option>
+            <option value="action_history">Actions History</option>
+            <option value="logout">Logout</option>
+
+            <!-- Add more options here as needed -->
+        </select>
+    </div>
 </body>
 </html>

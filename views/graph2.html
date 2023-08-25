@@ -1,0 +1,359 @@
+<html>
+    <head></head>
+    <script>
+        const today = new Date();
+        const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        console.log(formattedDate);
+        function fetchCategories(){
+
+        fetch('/api/categories')
+        .then(response => response.json())
+        .then(categories => {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+
+            const dropdownList = document.createElement('select');
+            dropdownList.id = 'categoryDropdown';
+            // Use a Set to store unique category names
+            const uniqueCategories = new Set();
+
+            categories.forEach(category => {
+                uniqueCategories.add(category.category);
+            });
+
+            // Convert the Set to an array and create options for the dropdown
+            const uniqueCategoriesArray = Array.from(uniqueCategories);
+            uniqueCategoriesArray.forEach(categoryName => {
+                const option = document.createElement('option');
+                option.value = categoryName;
+                option.text = categoryName;
+                dropdownList.appendChild(option);
+            });
+
+            // Add event listener to load subcategories
+            dropdownList.addEventListener('change', loadSubcategories);
+
+            modalContent.appendChild(dropdownList);
+           
+            // Create and append the action button
+            const actionButton = document.createElement('button');
+            actionButton.id = 'actionButton';
+            actionButton.innerText = 'Submit';
+            actionButton.addEventListener('click', handleButtonClick);
+            modalContent.appendChild(actionButton);
+
+            modal.appendChild(modalContent);
+            // Open the modal
+            document.body.appendChild(modal);
+        })
+        .catch(error => {
+            console.log('Error:', error);
+        });
+    }
+    function loadSubcategories() {
+            const selectedCategory = document.getElementById('categoryDropdown').value;
+            
+            fetch(`/api/subcategories?category=${selectedCategory}`)
+                .then(response => response.json())
+                .then(subcategories => {
+                    const subcategoryDropdown = document.createElement('select');
+                    subcategoryDropdown.id = 'subcategoryDropdown';
+                     // Default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.text = "Select a subcategory";
+            subcategoryDropdown.appendChild(defaultOption);
+                    // Use a Set to store unique subcategory names
+                const uniqueSubcategories = new Set();
+
+                subcategories.forEach(subcategory => {
+                    uniqueSubcategories.add(subcategory.subcategory);
+                });
+
+                // Convert the Set to an array and create options for the dropdown
+                const uniqueSubcategoriesArray = Array.from(uniqueSubcategories);
+                uniqueSubcategoriesArray.forEach(subcategoryName => {
+                    const option = document.createElement('option');
+                    option.value = subcategoryName;
+                    option.text = subcategoryName;
+                    subcategoryDropdown.appendChild(option);
+                });
+
+                // Clear any previously loaded subcategories
+                const existingSubcategoryDropdown = document.getElementById('subcategoryDropdown');
+                if (existingSubcategoryDropdown) {
+                    existingSubcategoryDropdown.remove();
+                }
+    
+                    // Append the new subcategory dropdown to the modal
+                    const modalContent = document.querySelector('.modal-content');
+                    modalContent.appendChild(subcategoryDropdown);
+                    // Attach an event listener to the subcategory dropdown to load products when a subcategory is selected
+                    document.getElementById('subcategoryDropdown').addEventListener('change', crafter);
+                })};
+                let all_offers_productid = [];
+                let all_offers=[];
+                let id_offervalue_map = new Map();
+            let datepriceArray=[];
+            let finalArray=[];
+            let count = 1;
+            let obj={};
+            // Declare an object variable outside the function to store grouped data
+let finalObject = {};
+
+  function trialfetch(){
+    fetch(`/api/2fetchtrial`)
+    .then(response => response.json())
+    .then(fetchedOffers => {
+        console.log('fetchCategories,',fetchedOffers)
+        const groupedData = fetchedOffers.reduce((acc, obj) => {
+        const { id, ...rest } = obj;
+
+        if (!acc[id]) {
+            acc[id] = [];
+        }
+
+        acc[id].push(rest);
+        
+        return acc;
+        }, {});
+       
+        
+        // Store grouped data into the final object
+        finalObject = groupedData;
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+  trialfetch();
+  
+    function crafter(){
+        console.log('crafter triggered')
+        const selectedCategory = document.getElementById('categoryDropdown').value;
+        const selectedSubcategory = document.getElementById('subcategoryDropdown').value;
+
+        console.log('Selected Category:', selectedCategory);
+        console.log('Selected Subcategory:', selectedSubcategory);
+    }
+    let filtered_offers = [];
+    let filt_offers =[];
+    let priceDifferenceMap = new Map();
+    let sevenDaysBeforeMap = new Map(); 
+    let pricesArray =[];
+    fetchCategories();
+    function handleButtonClick() {
+        let sum = 0;
+        
+        const today = new Date();
+        const formattedDate = formatDate(today);  // Format today's date
+
+        // Subtract 7 days to get the start date
+        const startDate = subtractDays(stringToDate(formattedDate), 7);
+
+        // Array to store the dates of the last 7 days
+        const lastSevenDays = [];
+
+        // Loop through each day from 7 days ago until today (exclusive)
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(startDate.getTime());
+            currentDay.setDate(startDate.getDate() + i);
+            lastSevenDays.push(formatDate(currentDay));
+        }
+
+        console.log(formattedDate);       // Should print something like "2023-08-18"
+        console.log(lastSevenDays);      // Should print an array with dates from "2023-08-11" to "2023-08-17"
+                
+        const selectedCategory = document.getElementById('categoryDropdown').value;
+        const selectedSubcategoryDropdown = document.getElementById('subcategoryDropdown');
+        const selectedSubcategory = selectedSubcategoryDropdown ? selectedSubcategoryDropdown.value : null;
+
+    if (selectedCategory && !selectedSubcategory) {
+        // Only category is selected
+        console.log('Only category selected:', selectedCategory);
+        for (const key in finalObject) {
+            finalObject[key].prices =[];
+            if (finalObject.hasOwnProperty(key)) {  // This line is to filter out properties from the object's prototype
+               
+               // console.log('Value:', finalArray[0][key]);
+                
+                for (const row in finalObject[key]){
+                   
+                   finalObject[key].category = finalObject[key][0].category
+                   finalObject[key].discount_hunter = finalObject[key][0].discount_hunter
+                   finalObject[key].dislikes = finalObject[key][0].dislikes
+                   finalObject[key].likes = finalObject[key][0].likes
+                   finalObject[key].offer_value = finalObject[key][0].offer_value
+                   if (finalObject[key][row].value && finalObject[key][row].date){
+                   finalObject[key].prices.push({value: finalObject[key][row].value,
+                                                date:finalObject[key][row].date})
+                   }
+                   finalObject[key].id = key
+                   finalObject[key].product_id = finalObject[key][0].product_id
+                   finalObject[key].rate = finalObject[key][0].rate
+                   finalObject[key].shop_name = finalObject[key][0].shop_name
+                   finalObject[key].start_date = finalObject[key][0].start_date
+                   finalObject[key].stock = finalObject[key][0].stock
+                   finalObject[key].subcategory = finalObject[key][0].subcategory
+                    
+                }
+                 // filter the finalObject
+            finalObject[key].splice(0, finalObject[key].length);
+            if( finalObject[key].category === selectedCategory){
+                console.log('found offer with the category selected')
+                filt_offers.push(finalObject[key])
+            }
+            }
+            }
+        
+        filt_offers.forEach(f_offer => {
+            console.log('f_offer',f_offer)
+            let counter =0;
+            sevenDaysBeforeMap.set(f_offer.id,[f_offer.offer_value,0])
+            f_offer.prices.forEach(row => {
+                const row_date = row.date.substring(0, 10);
+                if (lastSevenDays.includes(row_date)) {
+                    console.log('This date exists in the last 7 days:', row_date);
+                    sum += row.value;
+                    counter += 1;
+                    if (counter === 7) {
+                        sevenDaysAveragePrice = sum/7
+                        console.log('sum is :',sum)
+                        console.log('sum / 7 :',sum/7)
+                        console.log('f_offer.offer_value',f_offer.offer_value)
+                        sevenDaysBeforeMap.set(f_offer.id,f_offer.offer_value - sevenDaysAveragePrice)
+                    }  
+
+                }
+                
+                const offerDateObj = new Date(row_date);
+        });
+        console.log('map',sevenDaysBeforeMap)
+
+        let sumOfValues = 0;
+        let numberOfKeys = 0;
+
+        // Sum the values and count the keys
+        for (const value of sevenDaysBeforeMap.values()) {
+        sumOfValues += value;
+        numberOfKeys++;
+        }
+
+        // Calculate the average
+        let average_category_discount = numberOfKeys > 0 ? sumOfValues / numberOfKeys : 0;
+
+        console.log('The sum of values is:', sumOfValues);
+        console.log('The number of keys is:', numberOfKeys);
+        console.log('The average is:', average_category_discount);
+        
+});
+}
+ else if (selectedCategory && selectedSubcategory) {
+        // Both category and subcategory are selected
+        console.log('Category and subcategory selected:', selectedCategory, selectedSubcategory);
+        console.log('finalObject',finalObject)
+        for (const key in finalObject) {
+            finalObject[key].prices =[];
+            if (finalObject.hasOwnProperty(key)) {  // This line is to filter out properties from the object's prototype
+               
+               // console.log('Value:', finalArray[0][key]);
+                
+                for (const row in finalObject[key]){
+                   
+                   finalObject[key].category = finalObject[key][0].category
+                   finalObject[key].discount_hunter = finalObject[key][0].discount_hunter
+                   finalObject[key].dislikes = finalObject[key][0].dislikes
+                   finalObject[key].likes = finalObject[key][0].likes
+                   finalObject[key].offer_value = finalObject[key][0].offer_value
+                   if (finalObject[key][row].value && finalObject[key][row].date){
+                   finalObject[key].prices.push({value: finalObject[key][row].value,
+                                                date:finalObject[key][row].date})
+                   }
+                   finalObject[key].id = key
+                   finalObject[key].product_id = finalObject[key][0].product_id
+                   finalObject[key].rate = finalObject[key][0].rate
+                   finalObject[key].shop_name = finalObject[key][0].shop_name
+                   finalObject[key].start_date = finalObject[key][0].start_date
+                   finalObject[key].stock = finalObject[key][0].stock
+                   finalObject[key].subcategory = finalObject[key][0].subcategory
+                    
+                }
+                 // filter the finalObject
+            finalObject[key].splice(0, finalObject[key].length);
+            if( finalObject[key].category === selectedCategory){
+                console.log('found offer with the category selected')
+                filt_offers.push(finalObject[key])
+            }
+            }
+            }
+        
+        filt_offers.forEach(f_offer => {
+            console.log('f_offer',f_offer)
+            let counter =0;
+            sevenDaysBeforeMap.set(f_offer.id,[f_offer.offer_value,0])
+            f_offer.prices.forEach(row => {
+                const row_date = row.date.substring(0, 10);
+                if (lastSevenDays.includes(row_date)) {
+                    console.log('This date exists in the last 7 days:', row_date);
+                    sum += row.value;
+                    counter += 1;
+                    if (counter === 7) {
+                        sevenDaysAveragePrice = sum/7
+                        console.log('sum is :',sum)
+                        console.log('sum / 7 :',sum/7)
+                        console.log('f_offer.offer_value',f_offer.offer_value)
+                        sevenDaysBeforeMap.set(f_offer.id,f_offer.offer_value - sevenDaysAveragePrice)
+                    }  
+
+                }
+                
+                const offerDateObj = new Date(row_date);
+        });
+        console.log('map',sevenDaysBeforeMap)
+
+        let sumOfValues = 0;
+        let numberOfKeys = 0;
+
+        // Sum the values and count the keys
+        for (const value of sevenDaysBeforeMap.values()) {
+        sumOfValues += value;
+        numberOfKeys++;
+        }
+
+        // Calculate the average
+        let average_category_discount = numberOfKeys > 0 ? sumOfValues / numberOfKeys : 0;
+
+        console.log('The sum of values is:', sumOfValues);
+        console.log('The number of keys is:', numberOfKeys);
+        console.log('The average is:', average_category_discount);
+        
+});
+} else {
+        console.log('Please select a category.');
+    }
+}
+console.log('priceDifferenceMap',priceDifferenceMap)
+
+
+
+// Dates calculators
+
+function stringToDate(dateString) {
+    return new Date(dateString);
+}
+
+function subtractDays(date, days) {
+    const copyDate = new Date(date.getTime());
+    copyDate.setDate(copyDate.getDate() - days);
+    return copyDate;
+}
+
+function formatDate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+</script>
+</html>

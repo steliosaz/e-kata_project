@@ -11,7 +11,7 @@ exports.upload = async(req, res, next) => {
         });
 
         const productInsertQuery = `
-      INSERT INTO product (id, name, category, subcategory)
+      INSERT IGNORE INTO product (id, name, category, subcategory)
       VALUES ${productValues.join(', ')}
     `;
 

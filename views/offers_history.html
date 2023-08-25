@@ -1,0 +1,171 @@
+<html>
+    <head>
+        <style>
+            /* General table styling */
+            /* Table Styles */
+            
+            table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            border-radius: 12px;
+            overflow: hidden;
+            }
+
+            /* Table Header */
+            th {
+            background-color: #1F2F38;
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            text-transform: capitalize;
+            }
+
+            /* Table Body */
+            tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+            }
+
+            tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+            }
+
+            /* Table Cells */
+            td {
+            padding: 15px;
+            font-size: 16px;
+            }
+
+            /* Hover Effects */
+            tbody tr:hover {
+            background-color: #d4edda;
+            box-shadow: 0 0 15px rgba(0, 128, 0, 0.2);
+            }
+
+            /* Buttons */
+            button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s, color 0.3s;
+            }
+
+            .like-btn {
+            background-color: #3498db;
+            color: white;
+            }
+
+            .like-btn:hover {
+            background-color: #2980b9;
+            }
+
+            .dislike-btn {
+            background-color: #e74c3c;
+            color: white;
+            }
+
+            .dislike-btn:hover {
+            background-color: #c0392b;
+            }
+
+            /* Disabled Buttons */
+            button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            }
+
+            /* Image Styles */
+            img {
+            max-width: 50px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+        </style>
+    </head>
+    <script>
+        
+        function generateTable(data) {
+    // Create table headers
+    let tableHTML = `
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Product</th>
+                    <th>Offer Value</th>
+                    <th>Offers Date</th>
+                    <th>Expire Date</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    // Populate table with data
+    data.forEach((row, index) => {
+        console.log('data',row)
+        let boolean_variable ;
+        let parts = row.expire_date.split('T');
+        let firstPart = parts[0];
+        let isDisabled = (row.stock === 1) ? "" : "disabled grayed-out";
+        if (row.stock === 1 ){
+            boolean_variable = 'YES'
+        }
+        else{
+            boolean_variable = 'NO'
+        }
+        tableHTML += `
+            <tr>
+                <td><img src="${row.path}" alt="${row.name}" width="50" height="50"></td>
+                <td>${row.name}</td>
+                <td>${row.offer_value}</td>
+                <td>${row.start_date.split('T')[0]}</td>
+                <td>${firstPart}</td>
+            </tr>
+        `;
+    });
+
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+
+    return tableHTML;
+}
+
+        let decodedid ;
+
+        async function find_user() {
+            const response = await fetch(`/api/id`);
+            const users_info = await response.json();
+            decodedid = users_info.decodedId;
+
+            const usernameResponse = await fetch(`/api/get_username?id=${decodedid}`);
+            const usernamejson = await usernameResponse.json();
+            logged_user = usernamejson[0].username;
+        }
+        
+        function offers_made(){
+            console.log('offers made triggered')
+            console.log('decodedid2',decodedid)
+            fetch(`/api/get_offers_history?discount_hunter=${logged_user}`)
+            .then(response => response.json())
+            .then(offers_history => {
+                   console.log('offers_history',offers_history)
+                    const table = generateTable(offers_history);
+
+                    // Add table to the body or some container in your HTML (for example)
+                    document.body.innerHTML += table;
+                });
+            }
+        async function main() {
+    await find_user();
+    offers_made();
+}
+
+main();
+    </script>   
+</html>

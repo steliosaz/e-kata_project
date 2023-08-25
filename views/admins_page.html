@@ -2,13 +2,94 @@
 <html>
 <head>
   <title>Upload Products Data</title>
+  <style>
+    body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+}
+
+#leaderboard-table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto;
+    background-color: #fff;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+}
+
+#leaderboard-table th,
+#leaderboard-table td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+#leaderboard-table th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#leaderboard-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+button {
+    display: inline-block;
+    margin: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+button:disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+}
+#pagination-buttons {
+    text-align: center; /* This will center the buttons */
+    margin-top: 20px; /* This provides spacing between the table and buttons */
+}
+  </style>
 </head>
 <body>
-    <a href="/logout">Logout</a>
+  <a href="/logout">Logout</a>
   <h1>Upload Products Data</h1>
   <input type="file" id="file-input">
   <button id="upload-btn">Upload</button>
+  <button id="new-btn">New Button</button>
+
+  <h1>Leaderboard</h1>
+  <table id="leaderboard-table">
+      <thead>
+          <tr>
+              <th>Username</th>
+              <th>Points Earned</th>
+              <th>Previous Month Tokens Earned</th>
+              <th>Overall Tokens Earned</th>
+          </tr>
+      </thead>
+      <tbody>
+          <!-- Rows will be populated here using JavaScript -->
+      </tbody>
+  </table>
+
+  <div id="pagination-buttons">
+      <button id="prev-btn">Previous</button>
+      <button id="next-btn">Next</button>
+  </div>
+</body>
+    
   <script>
+    
     document.getElementById("upload-btn").addEventListener("click", function() {
         var fileInput = document.getElementById("file-input");
         var file = fileInput.files[0];
@@ -19,7 +100,7 @@
           var contents = e.target.result;
           var data = JSON.parse(contents);
           // Use the data from the JSON file
-          fetch('http://localhost:3000/upload', {
+          fetch('http://localhost:3000/api/upload', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -44,6 +125,138 @@
         
         reader.readAsText(file);
       });
+      
+      let currentPage = 0; // This will track our current page. Starts from page 0.
+let userMap = new Map();
+async function MapCreator(){
+  const response = await fetch(`/api/get_users`);
+  const all_users = await response.json();
+
+  all_users.forEach(user => {
+    userMap.set(user.user_name, [user.overall_score, user.last_months_tokens, user.tokens_earned, user.monthly_score]);
+  });
+}
+function leaderboard() {
+    MapCreator().then(() => {
+    const sortedUsers = [...userMap.entries()].sort((a, b) => b[1][0] - a[1][0]);
+
+      displayLeaderboard(sortedUsers, currentPage);
+      
+      document.getElementById('prev-btn').addEventListener('click', function() {
+          if (currentPage > 0) {
+              currentPage--;
+              displayLeaderboard(sortedUsers, currentPage);
+          }
+      });
+
+      document.getElementById('next-btn').addEventListener('click', function() {
+          if ((currentPage + 1) * 10 < sortedUsers.length) {
+              currentPage++;
+              displayLeaderboard(sortedUsers, currentPage);
+          }
+      });
+    }).
+    catch(error => {
+    console.error('Error:', error);
+  })
+}
+      // Sort the map based on points in descending order
+
+      
+
+// Your tokens_crafter function without the scheduling and isLastDayOfMonth() check
+function tokens_crafter() {
+    console.log("tokens crafter triggered");
+    
+    MapCreator().then(() => {
+    let total_score = 0;
+    let total_users = 0;
+    const mapObj = Object.fromEntries(userMap);
+    fetch(`/api/get_users`)
+    .then(response => response.json())
+    .then(all_users => {
+
+        all_users.forEach(user => {
+            total_score += user.monthly_score;
+            total_users += 1;
+        });
+        
+        let all_tokens = total_users * 100;
+        let token_value_per_score = (0.8 * all_tokens) / total_score;
+        console.log('total_score', total_score);
+        console.log('total_users', total_users);
+        console.log('token_value_per_score', token_value_per_score);
+
+        all_users.forEach(user => {
+          const tokens = Math.round(user.monthly_score * token_value_per_score);
+          user.tokens = tokens;  // Assigning the calculated tokens to the user object for logging or other purposes
+                
+          if (mapObj.hasOwnProperty(user.user_name)) {
+              // Append tokens at the end of existing array
+              mapObj[user.user_name].push(tokens);  
+          } else {
+              // Create a new array with tokens if the user does not exist in the map
+              mapObj[user.user_name] = [tokens];
+          }
+
+});
+        
+        console.log('mapObj',mapObj)
+        fetch('/api/tokens_crafter', {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ userMap: mapObj })
+				}).then(response => response.json())
+				.then(data => {
+				console.log(data);
+				})
+				.catch(error => {
+				console.log(error);
+				});
+
+    })
+    .catch(error => {
+        console.error('Error fetching users:', error);
+    });
+  })
+    
+}
+
+// Schedule your tokens_crafter function to run at midnight on the 1st day of every month
+// '0 0 1 * *' means "At 00:00 on day-of-month 1."
+//cron.schedule('0 0 1 * *', () => {
+    //tokens_crafter();
+//});
+
+
+function displayLeaderboard(sortedUsers, page) {
+    const tableBody = document.getElementById('leaderboard-table').querySelector('tbody');
+    // Clear current rows
+    tableBody.innerHTML = '';
+
+    const start = page * 10;
+    const end = start + 10;
+
+    for (let i = start; i < end && i < sortedUsers.length; i++) {
+        let user = sortedUsers[i];
+        let row = tableBody.insertRow();
+        let usernameCell = row.insertCell(0);
+        let pointsCell = row.insertCell(1);
+        let tokensCell = row.insertCell(2);
+        let pr_months_tokensCell = row.insertCell(3);
+        
+        usernameCell.textContent = user[0];
+        pointsCell.textContent = user[1][0];
+        tokensCell.textContent = user[1][1];
+        pr_months_tokensCell.textContent = user[1][2];
+    }
+}
+
+// Invoke the leaderboard function
+leaderboard();
+
     </script>
 </body>
 </html>

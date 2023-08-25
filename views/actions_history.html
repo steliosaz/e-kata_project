@@ -1,0 +1,77 @@
+<html>
+    <head>
+    </head>
+    <script>
+        
+        function generateTable(data) {
+            // Create table headers
+            let tableHTML = `
+                <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif;">
+                    <thead style="background-color: #f2f2f2;">
+                        <tr>
+                            <th style="padding: 10px; border: 1px solid #dddddd;">Product</th>
+                            <th style="padding: 10px; border: 1px solid #dddddd;">Offer Value</th>
+                            <th style="padding: 10px; border: 1px solid #dddddd;">Offers Date</th>
+                            <th style="padding: 10px; border: 1px solid #dddddd;">Action Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // Populate table with data
+            data.forEach((row, index) => {
+                let parts = row.action_date.split('T');
+                let firstPart = parts[0];
+                let rowColor = index % 2 === 0 ? "#f2f2f2" : "#ffffff";
+                tableHTML += `
+                    <tr style="background-color: ${rowColor};">
+                        <td style="padding: 10px; border: 1px solid #dddddd;">${row.product_name}</td>
+                        <td style="padding: 10px; border: 1px solid #dddddd;">${row.offer_value}</td>
+                        <td style="padding: 10px; border: 1px solid #dddddd;">${row.action_date.split('T')[0]}</td>
+                        <td style="padding: 10px; border: 1px solid #dddddd;">${firstPart}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            return tableHTML;
+        }
+
+        let decodedid ;
+        let user ;
+        async function find_user() {
+            const response = await fetch(`/api/id`);
+            const users_info = await response.json();
+            decodedid = users_info.decodedId;
+
+            const usernameResponse = await fetch(`/api/get_username?id=${decodedid}`);
+            const usernamejson = await usernameResponse.json();
+            user = usernamejson[0].username;
+        }
+        
+        function offers_made(){
+            console.log('offers made triggered')
+            console.log('decodedid2',decodedid)
+            fetch(`/api/get_actions?user=${user}`)
+            .then(response => response.json())
+            .then(offers_history => {
+                console.log('offers_history',offers_history)
+                const table = generateTable(offers_history);
+
+                // Add table to the body or some container in your HTML (for example)
+                document.body.innerHTML += table;
+            });
+        }
+
+        async function main() {
+            await find_user();
+            offers_made();
+        }
+
+main();
+    </script>   
+</html>

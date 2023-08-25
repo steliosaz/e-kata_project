@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Four Containers</title>
+    <style>
+        /* Styles for title and logout button */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 1.5em;
+        }
+
+        .logout-button {
+            cursor: pointer;
+            padding: 10px 20px;
+            border: none;
+            background-color: red;
+            color: white;
+        }
+
+        /* Main container that holds the four smaller containers */
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Individual containers */
+        .sub-container {
+            flex: 1;
+            width: 50%;
+            height: 50vh;
+            box-sizing: border-box;
+            margin-right : 10px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* The images inside the containers */
+        .sub-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Hover text styling */
+        .sub-container:hover::before {
+            content: attr(data-hover-text);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1.5em;
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    
+     <!-- Header -->
+     <div class="header">
+        <div>Welcome, Mr. Admin</div>
+        <button id="logout-button" class="logout-button">Logout</button>
+    </div>
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- First Container -->
+        <div class="sub-container" data-hover-text="Maps" data-redirect-url="/redirectToMap">
+            <img src="/icons/maps_image.webp">
+            <p>Map</p>
+        </div>
+        
+        <!-- Second Container -->
+        <div class="sub-container" data-hover-text="Graphs" data-redirect-url="/redirectToMap">
+            <img src="/icons/graphs.jpg">
+            <p>Graphs</p>
+        </div>
+
+        <!-- Third Container -->
+        <div class="sub-container" data-hover-text="Upload" data-redirect-url="/upload_page">
+            <img src="/icons/upload.jpg">
+            <p>Upload</p>
+        </div>
+
+        <!-- Fourth Container -->
+        <div class="sub-container" data-hover-text="LeaderBoard" data-redirect-url="/redirectToMap">
+            <img src="/icons/leaderboard.jpg">
+            <p>LeaderBoard</p>
+        </div>
+    </div>
+</body>
+<script>
+    document.getElementById('logout-button').addEventListener('click', function() {
+    window.location.href = '/logout';
+    });
+
+    // Redirect on click of a sub-container
+    document.querySelectorAll('.sub-container').forEach((container) => {
+            container.addEventListener('click', function() {
+                const redirectTo = this.getAttribute('data-redirect-url');
+                window.location.href = redirectTo;
+            });
+        });
+    
+</script>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drag and Drop File Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 36px;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .container {
+            width: 300px;
+            height: 200px;
+            margin-top: 40px;
+            border: 4px dashed #ccc;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background-color: #fff;
+            cursor: pointer;
+            transition: border 0.3s ease;
+        }
+        .container:hover, .container.dragover {
+            border-color: #aaa;
+        }
+        p {
+            margin: 0;
+            font-size: 18px;
+            text-align: center;
+        }
+        #file-input {
+            display: none;
+        }
+        #upload-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        #upload-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p>Drag & Drop your file here</p>
+        <p>or</p>
+        <p>Click to select file</p>
+    </div>
+    <input type="file" id="file-input">
+    <button id="upload-btn">Upload</button>
+
+    <script>
+        const container = document.querySelector('.container');
+
+        container.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            container.classList.add('dragover');
+        });
+
+        container.addEventListener('dragleave', () => {
+            container.classList.remove('dragover');
+        });
+
+        container.addEventListener('drop', (event) => {
+            event.preventDefault();
+            container.classList.remove('dragover');
+
+            const files = event.dataTransfer.files;
+            document.getElementById('file-input').files = files;
+        });
+
+        container.addEventListener('click', () => {
+            const fileInput = document.getElementById('file-input');
+            fileInput.click();
+        });
+
+        document.getElementById("upload-btn").addEventListener("click", function() {
+            var fileInput = document.getElementById("file-input");
+            var file = fileInput.files[0];
+
+            var reader = new FileReader();
+
+            reader.onload = function(e) {
+                var contents = e.target.result;
+                var data = JSON.parse(contents);
+                fetch('http://localhost:3000/api/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            };
+
+            reader.onerror = function(e) {
+                console.error('Error:', e.target.error);
+            };
+
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>

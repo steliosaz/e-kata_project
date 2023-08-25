@@ -30,4 +30,19 @@ router.route('/views/admins_page.html').get(adminAuthMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/admins_page.html'));
 });
 
+router.route('/views/graphs.html').get(adminAuthMiddleware, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/graphs.html'));
+});
+
+router.route('/views/graph2.html').get(adminAuthMiddleware, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/graph2.html'));
+});
+
+router.route('/views/trial.html').get(adminAuthMiddleware, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/trial.html'));
+});
+
+router.route('/views/upload_page.html').get(adminAuthMiddleware, (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/upload_page.html'));
+});
 module.exports = router;

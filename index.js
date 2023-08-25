@@ -7,6 +7,7 @@ const mysql = require('mysql');
 const db = require('./services/connectdb');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const cron = require('node-cron');
 const CircularJSON = require('circular-json');
 const { adminAuthMiddleware, userAuthMiddleware } = require('./auth/auth');
 
@@ -26,15 +27,35 @@ app.use(cookieParser());
 
 app.use('/', require('./controllers/routing'))
 app.use('/api/auth', require('./controllers/auth'))
-app.use('/api/admin', require('./controllers/admin'))
+app.use('/', require('./controllers/admin'))
 app.use('/', require('./controllers/users'))
-
+app.use('/icons', express.static('icons'));
 
 app.get('/redirectToMap', (req, res) => {
   res.sendFile(__dirname + '/views/map.html');
 });
 
+app.get('/rate_offers', (req, res) => {
+  const shopname = req.query.ShopName;
+  res.sendFile(__dirname + '/views/rate_offers.html');
+});
 
+
+app.get('/offers_history', (req, res) => {
+  res.sendFile(__dirname + '/views/offers_history.html');
+});
+
+app.get('/change', (req, res) => {
+  res.sendFile(__dirname + '/views/change_credentials.html');
+});
+
+app.get('/action_history', (req, res) => {
+  res.sendFile(__dirname + '/views/actions_history.html');
+});
+
+app.get('/upload_page', (req, res) => {
+  res.sendFile(__dirname + '/views/upload_page.html');
+});
 
 // Start the server
 app.listen(port, () => {

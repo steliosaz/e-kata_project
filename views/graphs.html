@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropdown Lists</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Body Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(135deg, #83a4d4, #b6fbff);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    
+        /* Dropdown Styles */
+        select {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+            background: white;
+            font-size: 16px;
+            appearance: none; /* Removes default styling in some browsers */
+            cursor: pointer;
+            outline: none;
+        }
+        
+        /* Canvas Styles */
+        canvas {
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        #canvasIntro {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #canvasIntro h1 {
+            font-size: 24px;
+            margin: 0;
+            color: #333;
+        }
+
+        #canvasIntro p {
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dropdown for Years -->
+<select id="yearDropdown">
+    <option value="">Choose year</option>
+    <option value="2010">2010</option>
+    <option value="2011">2011</option>
+    <option value="2012">2012</option>
+    <option value="2013">2013</option>
+    <option value="2014">2014</option>
+    <option value="2015">2015</option>
+    <option value="2016">2016</option>
+    <option value="2017">2017</option>
+    <option value="2018">2018</option>
+    <option value="2019">2019</option>
+    <option value="2020">2020</option>
+    <option value="2021">2021</option>
+    <option value="2022">2022</option>
+    <option value="2023">2023</option>
+</select>
+
+<!-- Dropdown for Months -->
+<select id="monthDropdown">
+    <option value="">Choose month</option>
+    <option value="January">January</option>
+    <option value="February">February</option>
+    <option value="March">March</option>
+    <option value="April">April</option>
+    <option value="May">May</option>
+    <option value="June">June</option>
+    <option value="July">July</option>
+    <option value="August">August</option>
+    <option value="September">September</option>
+    <option value="October">October</option>
+    <option value="November">November</option>
+    <option value="December">December</option>
+</select>
+<div id="canvasIntro">
+    <h1>Your Chart Title</h1>
+    <p>Description or introductory text for your chart.</p>
+    
+</div>
+<canvas id="offersChart" width="400" height="400"></canvas>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const yearDropdown = document.getElementById('yearDropdown');
+        const monthDropdown = document.getElementById('monthDropdown');
+        let daysList = [];
+        let result = [];
+        const numbers = Array.from({ length: 9 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+
+        yearDropdown.addEventListener('change', displayDaysInMonth);
+        monthDropdown.addEventListener('change', displayDaysInMonth);
+function displayDaysInMonth() {
+    const year = document.getElementById('yearDropdown').value;
+    const monthName = document.getElementById('monthDropdown').value;
+    
+    const monthLookup = {
+    'January': '01',
+    'February': '02',
+    'March': '03',
+    'April': '04',
+    'May': '05',
+    'June': '06',
+    'July': '07',
+    'August': '08',
+    'September': '09',
+    'October': '10',
+    'November': '11',
+    'December': '12'
+};
+
+    const month = monthLookup[monthName];
+    
+    if (year && month) {
+        const days = getDaysInMonth(month, year); // find the days of the year/month selected
+       
+        
+        console.log('result',result)
+        for (let i = 1; i <= days; i++) {
+            daysList.push(i.toString().padStart(2, '0'));  // Convert number to string and pad with '0' if necessary
+            result.push(0)
+        }   
+        for (let i = 1; i < 10; i++) {
+            numbers.push(i.toString().padStart(2, '0'));
+        }
+
+        console.log(daysList)
+        console.log('result',result)
+        selected_year_month = `${year}-${month}`
+        console.log(`Selected year-month: ${selected_year_month},${days} days.`);
+        offer_printer(selected_year_month);
+    }
+}
+
+function getDaysInMonth(month, year) {
+    
+    const monthIndex = new Date(`${month} 01, ${year}`).getMonth() + 1; // months are 0-indexed in JS
+    return new Date(year, monthIndex, 0).getDate();
+}
+function offer_printer(selectedYearMonth) {
+    console.log('offer_printer triggered');
+    fetch(`/api/get_all_offers`)
+        .then(response => response.json())
+        .then(alloffers => {
+            //console.log(alloffers);
+
+            // Modify the start_date for each offer in the alloffers array
+            const modifiedOffers = alloffers.map(offer => {
+                return {
+                    ...offer, // Spread the other properties of the offer object
+                    yymmdd: offer.start_date.slice(0, 10), // Modify start_date
+                    yymm: offer.start_date.slice(0, 7)
+                };
+            });
+            //console.log(modifiedOffers);
+        // Filter the offers to see if any match the selectedYearMonth
+        const matchingOffers = modifiedOffers.filter(offer => offer.yymm === selectedYearMonth);
+            
+            if (matchingOffers.length > 0) {
+                console.log('Found offers matching the selected year-month:', matchingOffers);
+                matchingOffers.forEach(m_offer  => {
+                    console.log(m_offer.yymmdd.substring(m_offer.yymmdd.length - 2))
+                    if (numbers.includes(m_offer.yymmdd.substring(m_offer.yymmdd.length - 2))){
+                        result[m_offer.yymmdd.substring(m_offer.yymmdd.length - 1)] += 1;
+                    }
+                    else{
+                    result[m_offer.yymmdd.substring(m_offer.yymmdd.length - 2)] += 1;
+                    
+                    }
+                });
+                drawChart(matchingOffers);
+            } else {
+                console.log('No offers found for the selected year-month.');
+            }
+
+        })
+        .catch(error => {
+            console.error('Error fetching offers:', error);
+        });
+}
+
+
+function drawChart(offers) {
+    console.log('offers:',offers)
+    const ctx = document.getElementById('offersChart').getContext('2d');
+    const labels = offers.map(offer => offer.start_date || "Unnamed Offer");  // Assumes each offer has a 'name'. Modify as needed.
+    const data = offers.map(offer => offer.product_id);  // Replace 'value' with the property of the offer you want to graph.
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(85, 37, 130, 0.9)');
+    gradient.addColorStop(1, 'rgba(152, 33, 129, 0.9)');
+    
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: daysList,
+            datasets: [{
+                label: 'Offer Value',
+                data: result,
+                backgroundColor: gradient, // using gradient here
+                borderColor: 'rgba(152, 33, 129, 1)',
+                borderWidth: 1,
+                hoverBackgroundColor: 'rgba(152, 33, 129, 0.7)',
+                hoverBorderColor: 'rgba(152, 33, 129, 1)',
+            }]
+        },
+        options: {
+            title: {
+        display: true,
+        text: 'Your Title Here',
+        fontSize: 20
+    },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutBounce'
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks:{
+                        callback:function(value){
+                            if (value %1 === 0){
+                                return value;
+                            }
+                        }
+                    }
+                }
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                titleFontColor: '#fff',
+                bodyFontColor: '#fff',
+                footerFontColor: '#fff'
+            },
+            hover: {
+                mode: 'nearest',
+                intersect: true
+            },
+            legend: {
+                display: true,
+                labels: {
+                    fontColor: 'rgba(0,0,0,0.5)'
+                }
+            }
+        }
+    });
+}
+
+
+
+    </script>
+    
+</body>
+</html>

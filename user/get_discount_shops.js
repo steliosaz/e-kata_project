@@ -2,7 +2,7 @@ const db = require('../services/connectdb');
 
 exports.get_discinfo = async(req, res, next) => {
     
-    db.query('SELECT shop_name, offer_value, product_id, start_date, likes, dislikes FROM offers', (error, results) => {
+    db.query('SELECT * FROM offers', (error, results) => {
         if (error) {
           console.error('Error fetching offers:', error);
           res.status(500).json({ message: 'Error fetching offers' });

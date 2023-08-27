@@ -17,8 +17,7 @@
     <style>
         #map 
             {
-            height: 150px;
-             height: 500px;
+            height: 500px;
             }   
 
             
@@ -26,6 +25,7 @@
             background-color: #d3d3d3;  /* gray color */
             cursor: not-allowed;
         }
+        
     </style>
 </head>
 <body>
@@ -57,6 +57,19 @@
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
+        function checkAndDeleteExpiredOffers(){
+            const currentDate = new Date().toISOString().split('T')[0];  // Get today's date in YYYY-MM-DD format
+            console.log('currentDate',currentDate)
+            fetch(`/api/get_offers_expired?currentDate=${currentDate}`)
+            .then(response => response.json())
+            .then(offers_expired => {
+                console.log('offers_expired:',offers_expired)
+                
+            })
+            
+        }
+
+        checkAndDeleteExpiredOffers();
          //geolocation
          // Geolocation code:
         if (navigator.geolocation) {
@@ -76,22 +89,22 @@
                             const distance = marker.getLatLng().distanceTo(existingMarker.getLatLng());
                             if (distance <= 50) {
                                 let popupContent = existingMarker.getPopup().getContent();
-                                console.log('popupContent',popupContent)
+                                
                                 nearbyPopupsContent.push(popupContent);
                                 // Extract shop name using regex
-                                const regex = /<strong>Shop Name:<\/strong>\s*(.+?)\s*<br>/;
+                                const regex = /<strong>Shop Name:<\/strong>\s*(.+?)\s*<br>/s;
                                 const match = popupContent.match(regex);
 
                                 if (match && match[1]) {
                                     const shopName = match[1];
                                     shop_name = match[1]
-                                    console.log('shopName', shopName);
+                                    console.log('shopName', shop_name);
                                 }
                             // Check if the button is already added to avoid adding it multiple times
                             if (!popupContent.includes("id='extraButton'")) {
                                 popupContent += `
-                                <br><button id='extraButton'>Αξιολόγηση Προσφορών</button>
-                                <br><button id='addOfferBtn'>Προσθήκη προσφοράς</button>
+                                <br><button id='extraButton'>Αξιολόγηση Προσφορών</button><br>
+                                <br><button id='addOfferBtn'>Προσθήκη προσφοράς</button><br>
                                                 `;
                                 existingMarker.bindPopup(popupContent).openPopup();
                             } else {
@@ -121,50 +134,6 @@
             console.log("Geolocation is not supported by this browser.");
         }
 
-        function rate_offers_trial(){
-            console.log('rate_offers_trial_triggered')
-            let popupContent = document.activeElement.closest('.leaflet-popup-content').innerHTML;
-            let regexShopName = /<strong>Shop Name:<\/strong> (.*?)<br>/;
-            let matchShopName = popupContent.match(regexShopName);
-            let shopName;
-            if (matchShopName && matchShopName[1]) {
-                shopName = matchShopName[1];
-                console.log(shopName);
-            } else {
-                console.log("Shop Name not found!");
-            }
-            window.location.href = `/rate_offers?ShopName=${shopName}`;
-        }
-
-        function checkAndDeleteExpiredOffers(){
-            const currentDate = new Date().toISOString().split('T')[0];  // Get today's date in YYYY-MM-DD format
-            console.log('currentDate',currentDate)
-            fetch(`/api/get_offers_expired?currentDate=${currentDate}`)
-            .then(response => response.json())
-            .then(offers_expired => {
-                console.log('offers_expired:',offers_expired)
-                
-            })
-            
-        }
-
-        checkAndDeleteExpiredOffers();
-        function fetchAllOffers(){
-            fetch(`/api/get_all_offers`)
-            .then(response => response.json())
-            .then(alloffers => {
-                console.log('all offers:',alloffers)
-                all_offers = alloffers;
-            })
-            // Schedule the next check in 24 hours
-            setTimeout(checkAndDeleteExpiredOffers, 24 * 60 * 60 * 1000);
-        }
-
-        // Start the schedule
-        checkAndDeleteExpiredOffers();
-
-        fetchAllOffers();
-
         function find_user(){
             fetch(`/api/id`)
                 .then(response => response.json())
@@ -182,18 +151,54 @@
                     console.error('There was an error:', error);
                 });
         }
-    
+        
         find_user();
+
+        
+        function rate_offers_trial(){
+            console.log('rate_offers_trial_triggered')
+            let popupContent = document.activeElement.closest('.leaflet-popup-content').innerHTML;
+            let regexShopName = /<strong>Shop Name:<\/strong> (.*?)<br>/;
+            let matchShopName = popupContent.match(regexShopName);
+            let shopName;
+            if (matchShopName && matchShopName[1]) {
+                shopName = matchShopName[1];
+                console.log(shopName);
+            } else {
+                console.log("Shop Name not found!");
+            }
+            window.location.href = `/rate_offers?ShopName=${shopName}`;
+        }
+
+        
+        function fetchAllOffers(){
+            fetch(`/api/get_all_offers`)
+            .then(response => response.json())
+            .then(alloffers => {
+                console.log('all offers:',alloffers)
+                all_offers = alloffers;
+            })
+            // Schedule the next check in 24 hours
+            setTimeout(checkAndDeleteExpiredOffers, 24 * 60 * 60 * 1000);
+        }
+
+        // Start the schedule
+        checkAndDeleteExpiredOffers();
+
+        fetchAllOffers();
+
+        
 
         let redIcon = L.icon({
                 iconUrl: '/icons/offer.png', // Replace with the path to your custom marker image
                 iconSize: [25, 41], // Size of the icon
                 iconAnchor: [12, 41], // Point of the icon which will correspond to marker's location
-                popupAnchor: [1, -34] // Point from which the popup should open relative to the iconAnchor
+                popupAnchor: [1, -34], // Point from which the popup should open relative to the iconAnchor
             });
         let shopData; // Variable to store the data result from the Overpass API
+        let shopOffers = {};
         function create_offer_markers() {
-            // Create a custom icon
+           
             
             const patrasCoordinates = '38.2468,21.7347,38.3052,21.8031';
             
@@ -206,7 +211,7 @@
             out center;`;
 
             
-            let shopOffers = {};
+            
 
             fetch('https://overpass-api.de/api/interpreter', {
                 method: 'POST',
@@ -218,6 +223,7 @@
                 .then(response => response.json())
                 .then(data => {
                     shopData = data.elements;
+                    console.log('shopData',shopData)
                     // Store the data in the shopData variable
                     return fetch(`/api/info`);
                 })
@@ -229,13 +235,24 @@
                             .then(response => response.json())
                             .then(data => {
                                 const shopName = offer.shop_name;
+                                
                                 if (!shopOffers[shopName]) {
                                     shopOffers[shopName] = [];
+                                }
+                                if(offer.criteria === 0){
+                                    offer.criteria = '20% less than the most recent value. ✅'
+                                }
+                                else if(offer.criteria === 1){
+                                    offer.criteria = '20% less than the average value of the last 7 days. ✅'
+                                }
+                                else{
+                                    offer.criteria = 'No criteria. ❌'
                                 }
                                 shopOffers[shopName].push({
                                     name: data[0].name,
                                     offer_value: offer.offer_value,
                                     date : offer.start_date,
+                                    criteria: offer.criteria,
                                     likes : offer.likes,
                                     dislikes : offer.dislikes
 
@@ -248,13 +265,16 @@
                 .then(() => {
                     shopData.forEach(shop => {
                         if (shopOffers[shop.tags.name]) {
+                            
                             const mapentries = shopOffers[shop.tags.name].map(offer => 
-                            `<li><strong>Product Name:</strong> ${offer.name} 
-                            <strong>Price:</strong> ${offer.offer_value} 
-                            <strong>Date:</strong> ${offer.date.split('T')[0]}
-                            <strong>Likes:</strong> ${offer.likes} 
+
+                            `<li><strong>Product Name:</strong> ${offer.name}<br> 
+                            <strong>Price:</strong> ${offer.offer_value}<br>
+                            <strong>Date:</strong> ${offer.date.split('T')[0]}<br>
+                            <strong>Criteria:</strong> ${offer.criteria}<br> 
+                            <strong>Likes:</strong> ${offer.likes}<br> 
                             <strong>Dislikes:</strong> ${offer.dislikes}</li>`).join('');
-                            console.log(shopOffers)
+                            
                             if (mapentries) {
                                 let newMarker = L.marker([shop.lat, shop.lon], {icon: redIcon})
                                     .addTo(map)
@@ -263,32 +283,33 @@
                                         <strong>Shop Name:</strong> ${shop.tags.name}<br>
                                         <strong>Discount products:</strong>${mapentries}<br>
 
-                                    `);
+                                    `)
                                     allMarkers.push(newMarker);
-                                    console.log('allmarkers',allMarkers)
+                                }
                             }
-                        }
+                        });
+                    })
+                    .catch(error => {
+                        console.log('Error:', error);
                     });
-                })
-                .catch(error => {
-                    console.log('Error:', error);
-                });
-        }
+                }
         create_offer_markers();
         
         // Add event listener to the button
-        document.getElementById('createMarkersButton').addEventListener('click', createMarkers);
         document.getElementById('createMarkersButton').addEventListener('click', find_store);
+        document.getElementById('createMarkersButton').addEventListener('click', createMarkers);
         
+
+       
         function find_store(){
             // Clear existing markers
             allMarkers.forEach(marker => {
                 marker.remove();
             });
             let productMap = new Map();
-            let shopOffers = {};
+            
             const tagName = document.getElementById('tagNameInput').value;
-           
+            let shopOffers = {};
             fetch(`/api/get_offers_categories`)
             .then(response => response.json())
             .then(offers_table => {
@@ -309,7 +330,6 @@
                                 dislikes : offer.dislikes
                             });
                         }})
-                        console.log('shopData',shopData)
                         shopData.forEach(shop => {
                         if (shopOffers[shop.tags.name]) {
 
@@ -328,6 +348,7 @@
                                         <strong>Shop Name:</strong> ${shop.tags.name}<br>
                                         <strong>Discount products:</strong>${mapentries}<br>
                                     `);
+                                    
                                     allMarkers.push(newMarker);
                     }
                 }
@@ -348,77 +369,56 @@
                 .then(response => response.json())
                 .then(categories => {
                     const uniqueCategories = new Set();
-
                     categories.forEach(category => {
                         uniqueCategories.add(category.category);
                     });
-                    //console.log(uniqueCategories)
+                })
+                // Get the user input from the input field
+                const tagName = document.getElementById('tagNameInput').value;
+               
+                // Filter the shopData based on the tag name
+                const shopDataList = shopData.filter(node => node.tags && node.tags.name === tagName );
+                
+                if (shopOffers.hasOwnProperty(tagName)) {
+                    
+                    shopDataList.forEach(node => {
+                    const { lat, lon } = node;
+                    const marker = L.marker([lat, lon],{icon: redIcon}).addTo(map);
+                    console.log('shopOffers',shopOffers)
+                     // Use .map() and .join() to create a single string for popupContent
+                    const popupContent = shopOffers[tagName].map(offer =>
+                     `
+                        <li>
+                            <strong>Product Name:</strong> ${offer.name}
+                            <strong>Price:</strong> ${offer.offer_value}
+                            <strong>Date:</strong> ${offer.date.split('T')[0]}
+                            <strong>Criteria:</strong> ${offer.criteria}
+                            <strong>Likes:</strong> ${offer.likes}
+                            <strong>Dislikes:</strong> ${offer.dislikes}
+                        </li>`).join('');
 
+                    marker.bindPopup(`
+                                        <strong>Shop Name:</strong> ${tagName}<br>
+                                        <strong>Discount products:</strong>${popupContent}<br>
+                                    `)
+                    allMarkers.push(marker)
+                    })
+                }else {
+                    
+                    shopDataList.forEach(node => {
+                    const { lat, lon } = node;
+                    const marker = L.marker([lat, lon]).addTo(map);
+                    const popupContent = `
+                        <strong>Shop Name:</strong> ${tagName}<br>
+                    `;
+                    
+                    marker.bindPopup(popupContent)
+                    allMarkers.push(marker)
                 })
-            // Get the user input from the input field
-            const tagName = document.getElementById('tagNameInput').value;
-    
-            // Define the Overpass API query
-            const patrasCoordinates = '38.2468,21.7347,38.3052,21.8031';
-            const overpassQuery = `[out:json][timeout:25];
-            (
-              node["shop"="supermarket"](${patrasCoordinates});
-              node["shop"="convenience"](${patrasCoordinates});
-            );
-            out center;`;
-    
-            // Make the Overpass API request using Fetch API
-            fetch('https://overpass-api.de/api/interpreter', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: 'data=' + encodeURIComponent(overpassQuery)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    const results = data.elements;
-                    const nodesList = [];
-    
-                    // Process the results
-                    results.forEach(result => {
-                        const latitude = result.lat;
-                        const longitude = result.lon;
-                        const tags = result.tags;
-    
-                        const node = {
-                            latitude,
-                            longitude,
-                            tags
-                        };
-    
-                        nodesList.push(node);
-                    });
-                    // Filter the nodesList based on the tag name
-                    const filteredNodes = nodesList.filter(node => node.tags && node.tags.name === tagName );
-    
-                    // Create markers for the filtered nodes and add them to the map
-                    filteredNodes.forEach(node => {
-                        const { latitude, longitude } = node;
-                        const marker = L.marker([latitude, longitude],{icon: redIcon}).addTo(map);
-                        const popupContent = `<div>
-                            <p>Shop name: ${node.tags.name}</p>
-                            <button onclick="addOffer()">Προσθήκη προσφοράς</button>
-                            </div>`;
-                        
-                        marker.bindPopup(popupContent)
-                        marker.on('click', function (e) {
-                            lastClickedMarkerName = node.tags.name;
-                            console.log('lastClickedMarkerName',lastClickedMarkerName)
-                        
-        });
-                    });
-                })
-                .catch(error => {
-                    console.log('Error:', error);
-                });
-        }
-        
+            }
+                }
+                // Create markers for the filtered nodes and add them to the map
+                
         // Function to handle the "Προσθήκη προσφοράς" button click
         function addOffer() {
             fetch('/api/categories')
@@ -432,6 +432,14 @@
     
                     const dropdownList = document.createElement('select');
                     dropdownList.id = 'categoryDropdown';
+                    // Create and add a default option
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.text = 'Select Category';
+                    defaultOption.selected = true;
+                    defaultOption.disabled = true;
+                    dropdownList.appendChild(defaultOption);
+
                     // Use a Set to store unique category names
                     const uniqueCategories = new Set();
 
@@ -450,10 +458,10 @@
 
                     // Add event listener to load subcategories
                     dropdownList.addEventListener('change', loadSubcategories);
-    
+
                     modalContent.appendChild(dropdownList);
                     modal.appendChild(modalContent);
-    
+
                     // Open the modal
                     document.body.appendChild(modal);
                 })
@@ -470,36 +478,46 @@
                 .then(response => response.json())
                 .then(subcategories => {
                     const subcategoryDropdown = document.createElement('select');
-                    subcategoryDropdown.id = 'subcategoryDropdown';
-    
-                    // Use a Set to store unique subcategory names
-                const uniqueSubcategories = new Set();
+            subcategoryDropdown.id = 'subcategoryDropdown';
 
-                subcategories.forEach(subcategory => {
-                    uniqueSubcategories.add(subcategory.subcategory);
-                });
+            // Create and add a default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.text = 'Select Subcategory';
+            defaultOption.selected = true;
+            defaultOption.disabled = true;
+            subcategoryDropdown.appendChild(defaultOption);
 
-                // Convert the Set to an array and create options for the dropdown
-                const uniqueSubcategoriesArray = Array.from(uniqueSubcategories);
-                uniqueSubcategoriesArray.forEach(subcategoryName => {
-                    const option = document.createElement('option');
-                    option.value = subcategoryName;
-                    option.text = subcategoryName;
-                    subcategoryDropdown.appendChild(option);
-                });
+            // Use a Set to store unique subcategory names
+            const uniqueSubcategories = new Set();
 
-                // Clear any previously loaded subcategories
-                const existingSubcategoryDropdown = document.getElementById('subcategoryDropdown');
-                if (existingSubcategoryDropdown) {
-                    existingSubcategoryDropdown.remove();
-                }
-    
-                    // Append the new subcategory dropdown to the modal
-                    const modalContent = document.querySelector('.modal-content');
-                    modalContent.appendChild(subcategoryDropdown);
-                    // Attach an event listener to the subcategory dropdown to load products when a subcategory is selected
-                    document.getElementById('subcategoryDropdown').addEventListener('change', loadProducts);
-                })};
+            subcategories.forEach(subcategory => {
+                uniqueSubcategories.add(subcategory.subcategory);
+            });
+
+            // Convert the Set to an array and create options for the dropdown
+            const uniqueSubcategoriesArray = Array.from(uniqueSubcategories);
+            uniqueSubcategoriesArray.forEach(subcategoryName => {
+                const option = document.createElement('option');
+                option.value = subcategoryName;
+                option.text = subcategoryName;
+                subcategoryDropdown.appendChild(option);
+            });
+
+            // Clear any previously loaded subcategories
+            const existingSubcategoryDropdown = document.getElementById('subcategoryDropdown');
+            if (existingSubcategoryDropdown) {
+                existingSubcategoryDropdown.remove();
+            }
+
+            // Append the new subcategory dropdown to the modal
+            const modalContent = document.querySelector('.modal-content');
+            modalContent.appendChild(subcategoryDropdown);
+
+            // Attach an event listener to the subcategory dropdown to load products when a subcategory is selected
+            document.getElementById('subcategoryDropdown').addEventListener('change', loadProducts);
+        });
+}
         
                 function loadProducts() {
                     const selectedSubcategory = document.getElementById('subcategoryDropdown').value;
@@ -631,11 +649,15 @@
                         
                         async  function logPriceAndName(price, name, id, stock) {
                             let sum = 0;
-                            console.log('stock',stock)
+                            let criteria_int ;
                             let sevendaysaverage;
                             const today = new Date();
                             const formattedDate = formatDate(today);  // Format today's date
+                            today.setDate(today.getDate() + 7);
+                            // Convert the Date object to a string in the format 'YYYY-MM-DD'
+                            const expire_date = today.toISOString().split('T')[0];
                             console.log('formattedDate',formattedDate)
+
                             // Subtract 7 days to get the start date
                             const startDate = subtractDays(stringToDate(formattedDate), 7);
 
@@ -687,7 +709,20 @@
                             }
                             // IF NEW OFFER IS 20% CHEAPER THAN THE OFFER THAT ALREADY EXISTS
                             else if (cheaperOfferExists){
-                            console.log('Fetching the offer as the price is at least 20% less than the existing one');    
+                                console.log('Fetching the offer as the price is at least 20% less than the existing one');    
+                                if (price < lastItem.pop() * 0.8) {
+                                    console.log('50 points triggered')
+                                    criteria_int = 1;
+                                }
+                                else if (price < sevendaysaverage * 0.8) {
+                                    console.log('20 points triggered')
+                                    criteria_int = 2;
+                                }
+                                else{
+                                    console.log('No criteria')
+                                    criteria_int = 0;
+                                }
+                               
                             fetch('/api/save/offer',{
                                 method: 'POST',
                                 headers:{
@@ -704,7 +739,8 @@
                                     discount_hunter:logged_user, 
                                     likes:0, 
                                     dislikes:0, 
-                                    expire_date: formattedDate}),
+                                    criteria: criteria_int,
+                                    expire_date: expire_date}),
                             })
                                 .then(response => response.json())
                                 .then(data => {
@@ -716,6 +752,18 @@
                             }
                             else if (!offerExists){
                                 console.log('offer does not exist')
+                                if (price < lastItem.pop() * 0.8) {
+                                    console.log('50 points triggered')
+                                    criteria_int = 1;
+                                }
+                                else if (price < sevendaysaverage * 0.8) {
+                                    console.log('20 points triggered')
+                                    criteria_int = 2;
+                                }
+                                else{
+                                    console.log('No criteria')
+                                    criteria_int = 0;
+                                }
                                 fetch('/api/save/offer',{
                                 method: 'POST',
                                 headers:{
@@ -732,17 +780,13 @@
                                     discount_hunter:logged_user, 
                                     likes:0, 
                                     dislikes:0, 
-                                    expire_date:formattedDate}),
+                                    criteria : criteria_int,
+                                    expire_date:expire_date}),
                             })
                                 .then(response => response.json())
                                 .then(data => {
-                                    console.log('price:',price)
-                                    console.log('sevendaysaverage:',sevendaysaverage)
-                                    console.log('lastItem.value',lastItem.pop())
                                     // Now check the conditions for points
-                                    if (price < lastItem.value * 0.8) {
-                                        console.log('decodedid',decodedid)
-                                        console.log('50points triggered')
+                                    if (criteria_int === 1) {
                                         return fetch('/api/points', {
                                             method: 'PUT',
                                             headers: {
@@ -750,8 +794,7 @@
                                             },
                                             body: JSON.stringify({ user_name: logged_user, points: 50 })
                                         });
-                                    } else if (price < sevendaysaverage * 0.8) {
-                                        console.log('20 points triggered')
+                                    } else if (criteria_int === 2) {
                                         return fetch('/api/points', {
                                             method: 'PUT',
                                             headers: {

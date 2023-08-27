@@ -1,7 +1,7 @@
 const db = require('../services/connectdb');
 
 exports.add_rate = async (req, res, next) => {
-  let { itemid, points, actionType, offer_value, user, action_date } = req.body; // added actionType
+  let { itemid, points, actionType, offer_value, user, action_date , store } = req.body; // added actionType
     console.log(req.body);
   
   let query1, queryValues1;
@@ -16,11 +16,11 @@ exports.add_rate = async (req, res, next) => {
       }
       
       if (actionType === "like") {
-          query1 = 'UPDATE offers SET rate = IFNULL(rate, 0) + ?, likes = IFNULL(likes, 0) + 1 WHERE product_id = ?';
-          queryValues1 = [points, itemid];
+          query1 = 'UPDATE offers SET rate = IFNULL(rate, 0) + ?, likes = IFNULL(likes, 0) + 1 WHERE product_id = ? AND shop_name = ? AND offer_value = ?';
+          queryValues1 = [points, itemid, store, offer_value];
       } else if (actionType === "dislike") {
-          query1 = 'UPDATE offers SET rate = IFNULL(rate, 0) + ?, dislikes = IFNULL(dislikes, 0) + 1 WHERE product_id = ?';
-          queryValues1 = [points, itemid];
+          query1 = 'UPDATE offers SET rate = IFNULL(rate, 0) + ?, dislikes = IFNULL(dislikes, 0) + 1 WHERE product_id = ? AND shop_name = ? AND offer_value = ?';
+          queryValues1 = [points, itemid, store, offer_value];
       } else {
           res.status(400).json({ message: 'Invalid actionType provided.' });
           return;

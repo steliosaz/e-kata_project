@@ -101,23 +101,37 @@
                                     console.log('shopName', shop_name);
                                 }
                             // Check if the button is already added to avoid adding it multiple times
-                            if (!popupContent.includes("id='extraButton'")) {
+                            if (decodedid === 2 && !popupContent.includes("id='addOfferBtn'")){
+                                popupContent += `
+                            
+                                <br><button id='addOfferBtn'>Προσθήκη προσφοράς</button><br>
+                                <br><button id='delOfferBtn'>Αξιολόγηση - Διαγραφή προσφοράς</button><br>
+                                                `;
+                                existingMarker.bindPopup(popupContent).openPopup();
+                            }
+                            else if (!popupContent.includes("id='extraButton'") && decodedid != 2) {
                                 popupContent += `
                                 <br><button id='extraButton'>Αξιολόγηση Προσφορών</button><br>
                                 <br><button id='addOfferBtn'>Προσθήκη προσφοράς</button><br>
                                                 `;
                                 existingMarker.bindPopup(popupContent).openPopup();
-                            } else {
+                            }
+                            else {
                                 existingMarker.openPopup();
                             }
+                            
                             // Attach event listener to the button when the popup is opened
                             existingMarker.once('popupopen', function() {
                                 
                                 let btn = document.getElementById('extraButton');
                                 let add_offer_btn = document.getElementById('addOfferBtn');
+                                let del_offer_btn = document.getElementById('delOfferBtn');
                                 if (btn && add_offer_btn) {
                                     btn.addEventListener('click', rate_offers_trial);
-                                    add_offer_btn.addEventListener('click',addOffer)
+                                    add_offer_btn.addEventListener('click',addOffer);
+                                }else{
+                                    add_offer_btn.addEventListener('click',addOffer);
+                                    del_offer_btn.addEventListener('click',rate_offers_trial);
                                 }
                             });
                             }
@@ -157,6 +171,7 @@
         
         function rate_offers_trial(){
             console.log('rate_offers_trial_triggered')
+            if (decodedid != 2){
             let popupContent = document.activeElement.closest('.leaflet-popup-content').innerHTML;
             let regexShopName = /<strong>Shop Name:<\/strong> (.*?)<br>/;
             let matchShopName = popupContent.match(regexShopName);
@@ -168,6 +183,19 @@
                 console.log("Shop Name not found!");
             }
             window.location.href = `/rate_offers?ShopName=${shopName}`;
+        }else{
+            let popupContent = document.activeElement.closest('.leaflet-popup-content').innerHTML;
+            let regexShopName = /<strong>Shop Name:<\/strong> (.*?)<br>/;
+            let matchShopName = popupContent.match(regexShopName);
+            let shopName;
+            if (matchShopName && matchShopName[1]) {
+                shopName = matchShopName[1];
+                console.log(shopName);
+            } else {
+                console.log("Shop Name not found!");
+            }
+            window.location.href = `/rate_offers?ShopName=${shopName}`;
+        }
         }
 
         

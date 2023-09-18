@@ -88,261 +88,280 @@ img {
 }
 
 
-        </style>
+    </style>
     </head>
     <body>
-        <!-- Your HTML content -->
+
+    <script>
+
+        let today = new Date();
+        let formatted_date = formatDate(today);
+
+        let user;
+        async function find_user(callback) {
+            const response = await fetch(`/api/id`);
+            const users_info = await response.json();
+            decodedid = users_info.decodedId;
+
+            const usernameResponse = await fetch(`/api/get_username?id=${decodedid}`);
+            const usernamejson = await usernameResponse.json();
+            user = usernamejson[0].username;
+
+        };
     
-        <script>
-
-let today = new Date();
-let formatted_date = formatDate(today);
-
-let user;
-async function find_user(callback) {
-    const response = await fetch(`/api/id`);
-    const users_info = await response.json();
-    decodedid = users_info.decodedId;
-
-    const usernameResponse = await fetch(`/api/get_username?id=${decodedid}`);
-    const usernamejson = await usernameResponse.json();
-    user = usernamejson[0].username;
-
-};
-    
-function generateTable(data, user) {
-    // Create table headers
-    console.log(user)
-    let tableHTML = `
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Image</th>
-                    <th>Product</th>
-                    <th>Offer Value</th>
-                    <th>Date</th>
-                    <th>Stock</th>
-                    <th>User</th>
-                    <th>Actions</th>
-                    ${user === 'admin' ? "<th>Delete Option</th>" : ""}
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    // Populate table with data
-    data.forEach((row, index) => {
-        let boolean_variable ;
-        let isDisabled = (row.stock === 1) ? "" : "disabled grayed-out";
-        if (row.stock === 1 ){
-            boolean_variable = 'YES'
-        }
-        else{
-            boolean_variable = 'NO'
-        }
-        tableHTML += `
-            <tr>
-                <td><img src="${row.product_path}"width="50" height="50"></td>
-                <td>${row.product_name}</td>
-                <td>${row.offer_value}</td>
-                <td>${row.start_date.split('T')[0]}</td>
-                <td>${boolean_variable}</td>
-                <td>${row.discount_hunter}</td>
-                <td>
-                    <button class="like-btn ${isDisabled}" data-index="${index}" ${isDisabled}>Like</button>
-                    <button class="dislike-btn ${isDisabled}" data-index="${index}" ${isDisabled}>Dislike</button>
-                </td>
-                ${user === 'admin' ? `<td><button class="delete-btn" data-index="${index}">Delete</button></td>` : ""} 
-            </tr>
+    function generateTable(data, user) {
+        // Create table headers
+        console.log(user)
+        let tableHTML = `
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Product</th>
+                        <th>Offer Value</th>
+                        <th>Date</th>
+                        <th>Stock</th>
+                        <th>User</th>
+                        <th>Actions</th>
+                        ${user === 'admin' ? "<th>Delete Option</th>" : ""}
+                    </tr>
+                </thead>
+                <tbody>
         `;
-    });
 
-    tableHTML += `
-    <div class="table-container">
-    <table>
-      ...
-    </table>
-  </div>
-    `;
-
-    return tableHTML;
-}
-    // This script runs when the page loads
-    const urlParams = new URLSearchParams(window.location.search);
-    const shopname = urlParams.get('ShopName');
-
-    // Now you can use someValue in your JavaScript code
-    console.log('The value of the variable is:', shopname);
-
-    product_Mapping = new Map();
-    productNamesArray = [];
-
-
-
-    async function infoTableGenerator() {
-        await find_user(); // Wait for find_user to complete
-
-        const response = await fetch(`/api/offers_bystorename?shop_name=${shopname}`);
-        const offers_columns = await response.json();
-        
-        let productID ;
-    fetch(`/api/offers_bystorename?shop_name=${shopname}`)
-    .then(response => response.json())
-    .then(offers_columns => {
-        console.log('offers_columns',offers_columns)
-        // Generate table from offers_columns data
-        const table = generateTable(offers_columns, user); // Now user is guaranteed to be defined
-
-        // Add table to the body or some container in your HTML (for example)
-        document.body.innerHTML += table;
-
-        // Attach the event listeners after the buttons have been created
-        document.querySelectorAll('.like-btn').forEach((btn, index) => {
-            btn.addEventListener('click', function(event) {
-                console.log(`Liked row index: ${index}`);
-
-                // Access the row that the button is part of
-                let row = event.target.closest('tr');
-                if (!row) {
-                    console.error("Couldn't find the parent row.");
-                    return;
-                }
-                 // A helper function to safely extract cell information
-        const getCellText = (selector) => {
-            let cell = row.querySelector(selector);
-            return cell ? cell.innerText : null;
-        };
-
-        let product = getCellText('td:nth-child(1)'); 
-        productID = offers_columns[index].product_id
-        let value = offers_columns[index].offer_value
-
-        
-        if (productID) {
-            console.log(`Product ID for ${product}: ${productID}`);
-            console.log('shopname',shopname)
-            console.log('offer_value',value)
-            // Assuming you have a fixed point value for each like
-            const pointsForLike = 5; // or whatever value you prefer
-
-            fetch('/api/add_rate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    itemid: productID, // Using the product_id as the userid for the API call
-                    points: pointsForLike,
-                    store: shopname,
-                    actionType: "like" ,// specifying the action type
-                    offer_value: value,
-                    user : user,
-                    action_date : formatted_date
-                    
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data.message); // Expected output: "Points updated successfully"
-            })
-            .catch(error => {
-                console.error('Fetch error:', error.message);
-            });
-        } else {
-            console.log(`Product ID for ${product} not found!`);
-        }
-            });
+        // Populate table with data
+        data.forEach((row, index) => {
+            let boolean_variable ;
+            let isDisabled = (row.stock === 1) ? "" : "disabled grayed-out";
+            if (row.stock === 1 ){
+                boolean_variable = 'YES'
+            }
+            else{
+                boolean_variable = 'NO'
+            }
+            tableHTML += `
+                <tr>
+                    <td><img src="${row.product_path}"width="50" height="50"></td>
+                    <td>${row.product_name}</td>
+                    <td>${row.offer_value}</td>
+                    <td>${row.start_date.split('T')[0]}</td>
+                    <td>${boolean_variable}</td>
+                    <td>${row.discount_hunter}</td>
+                    <td>
+                        <button class="like-btn ${isDisabled}" data-index="${index}" ${isDisabled}>Like</button>
+                        <button class="dislike-btn ${isDisabled}" data-index="${index}" ${isDisabled}>Dislike</button>
+                    </td>
+                    ${user === 'admin' ? `<td><button class="delete-btn" data-index="${index}">Delete</button></td>` : ""} 
+                </tr>
+            `;
         });
-        document.querySelectorAll('.dislike-btn').forEach((btn, index) => {
-            btn.addEventListener('click', function(event) {
-                console.log(`Liked row index: ${index}`);
 
-                // Access the row that the button is part of
-                let row = event.target.closest('tr');
-                if (!row) {
-                    console.error("Couldn't find the parent row.");
-                    return;
-                }
-                 // A helper function to safely extract cell information
-        const getCellText = (selector) => {
-            let cell = row.querySelector(selector);
-            return cell ? cell.innerText : null;
-        };
+        tableHTML += `
+        <div class="table-container">
+        <table>
+        ...
+        </table>
+    </div>
+        `;
 
-        let product = getCellText('td:nth-child(1)'); 
-        productID = offers_columns[index].product_id;
-        value = offers_columns[index].offer_value;
-        if (productID) {
-            console.log(`Product ID for ${product}: ${productID}`);
-
-            // Assuming you have a fixed point value for each like
-            const pointsForDislike = -1; // or whatever value you prefer
-
-            fetch('/api/add_rate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    itemid: productID, // Using the product_id as the userid for the API call
-                    points: pointsForDislike,
-                    actionType: "dislike" ,// specifying the action type
-                    offer_value: value,
-                    user : user,
-                    action_date : formatted_date
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data.message); // Expected output: "Points updated successfully"
-            })
-            .catch(error => {
-                console.error('Fetch error:', error.message);
-            });
-        } else {
-            console.log(`Product ID for ${product} not found!`);
-        }
-            });
-        });
-        if (user === 'admin') {
-        document.querySelectorAll('.delete-btn').forEach((btn, index) => {
-            btn.addEventListener('click', function(event) {
-                console.log(`Deleted row index: ${index}`);
-
-                // Implement your delete functionality here
-                // For example:
-                // await deleteRowFromDatabase(index);
-                
-                // Then remove the row from the DOM, if desired
-                const row = event.target.closest('tr');
-            });
-        });
+        return tableHTML;
     }
-    });
-}
+        // This script runs when the page loads
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopname = urlParams.get('ShopName');
 
-//functions i need to run
+        // Now you can use someValue in your JavaScript code
+        console.log('The value of the variable is:', shopname);
 
-infoTableGenerator();
+        product_Mapping = new Map();
+        productNamesArray = [];
 
 
 
-// Dates calculators
+        async function infoTableGenerator() {
+            await find_user(); // Wait for find_user to complete
 
-function stringToDate(dateString) {
-    return new Date(dateString);
-}
+            const response = await fetch(`/api/offers_bystorename?shop_name=${shopname}`);
+            const offers_columns = await response.json();
+            
+            let productID ;
+        fetch(`/api/offers_bystorename?shop_name=${shopname}`)
+        .then(response => response.json())
+        .then(offers_columns => {
+            console.log('offers_columns',offers_columns)
+            // Generate table from offers_columns data
+            const table = generateTable(offers_columns, user); // Now user is guaranteed to be defined
 
-function subtractDays(date, days) {
-    const copyDate = new Date(date.getTime());
-    copyDate.setDate(copyDate.getDate() - days);
-    return copyDate;
-}
+            // Add table to the body or some container in your HTML (for example)
+            document.body.innerHTML += table;
 
-function formatDate(date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-    
+            // Attach the event listeners after the buttons have been created
+            document.querySelectorAll('.like-btn').forEach((btn, index) => {
+                btn.addEventListener('click', function(event) {
+                    console.log(`Liked row index: ${index}`);
+
+                    // Access the row that the button is part of
+                    let row = event.target.closest('tr');
+                    if (!row) {
+                        console.error("Couldn't find the parent row.");
+                        return;
+                    }
+                    // A helper function to safely extract cell information
+            const getCellText = (selector) => {
+                let cell = row.querySelector(selector);
+                return cell ? cell.innerText : null;
+            };
+
+            let product = getCellText('td:nth-child(1)'); 
+            productID = offers_columns[index].product_id
+            let value = offers_columns[index].offer_value
+
+            
+            if (productID) {
+                console.log(`Product ID for ${product}: ${productID}`);
+                console.log('shopname',shopname)
+                console.log('offer_value',value)
+
+                fetch('/api/add_rate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        itemid: productID, // Using the product_id as the userid for the API call
+                        store: shopname,
+                        actionType: "like" ,// specifying the action type
+                        offer_value: value,
+                        user : user,
+                        action_date : formatted_date
+                        
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.message); // Expected output: "Points updated successfully"
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error.message);
+                });
+            } else {
+                console.log(`Product ID for ${product} not found!`);
+            }
+                });
+            });
+            document.querySelectorAll('.dislike-btn').forEach((btn, index) => {
+                btn.addEventListener('click', function(event) {
+                    console.log(`Liked row index: ${index}`);
+
+                    // Access the row that the button is part of
+                    let row = event.target.closest('tr');
+                    if (!row) {
+                        console.error("Couldn't find the parent row.");
+                        return;
+                    }
+                    // A helper function to safely extract cell information
+            const getCellText = (selector) => {
+                let cell = row.querySelector(selector);
+                return cell ? cell.innerText : null;
+            };
+
+            let product = getCellText('td:nth-child(1)'); 
+            productID = offers_columns[index].product_id;
+            value = offers_columns[index].offer_value;
+            if (productID) {
+                console.log(`Product ID for ${product}: ${productID}`);
+
+                fetch('/api/add_rate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        itemid: productID, // Using the product_id as the userid for the API call
+                        store: shopname,
+                        actionType: "dislike" ,// specifying the action type
+                        offer_value: value,
+                        user : user,
+                        action_date : formatted_date
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.message); // Expected output: "Points updated successfully"
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error.message);
+                });
+            } else {
+                console.log(`Product ID for ${product} not found!`);
+            }
+                });
+            });
+            if (user === 'admin') {
+                document.querySelectorAll('.delete-btn').forEach((btn, index) => {
+                    btn.addEventListener('click', function(event) {
+                        console.log(`Deleted row index: ${index}`);
+                    // Access the row that the button is part of
+                    let row = event.target.closest('tr');
+                    if (!row) {
+                        console.error("Couldn't find the parent row.");
+                        return;
+                    }
+                    // A helper function to safely extract cell information
+            const getCellText = (selector) => {
+                let cell = row.querySelector(selector);
+                return cell ? cell.innerText : null;
+            };
+
+            let product = getCellText('td:nth-child(1)'); 
+            productID = offers_columns[index].product_id;
+            value = offers_columns[index].offer_value;
+            console.log('value',value)
+            console.log('productID',productID)
+            if (productID){
+                console.log(`Product ID for ${product}: ${productID}`);
+                fetch(`/api/del_offer?store=${shopname}&productID=${productID}&offer_value=${value}`, {
+                method: 'DELETE',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Action deleted successfully');
+                    } else if (response.status === 404) {
+                        console.log('No actions deleted for the user');
+                    } else {
+                        console.error('Failed to delete action');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error.message);
+                });
+                            } else {
+                                console.log(`Product ID for ${product} not found!`);
+                            }
+                                    });
+                                });
+                            }
+                        });
+                    }   
+
+    infoTableGenerator();
+
+    // Dates calculators
+
+    function stringToDate(dateString) {
+        return new Date(dateString);
+    }
+
+    function subtractDays(date, days) {
+        const copyDate = new Date(date.getTime());
+        copyDate.setDate(copyDate.getDate() - days);
+        return copyDate;
+    }
+
+    function formatDate(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+        
         </script>
     </body>
-    </html>
+</html>

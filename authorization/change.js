@@ -29,6 +29,11 @@ exports.change = async (req, res, next) => {
             console.log(error);
             return res.status(500).json({ message: 'An error occurred while updating the user.' });
         }
+    db.query('UPDATE actions SET user_name = ? WHERE user_name = ?', [username,user], (error) => {
+        if (error) {
+            console.log(error);
+            return res.status(500).json({ message: 'An error occurred while updating the user.' });
+        }
         
 
         // Update the offers table
@@ -37,7 +42,12 @@ exports.change = async (req, res, next) => {
             console.log(error);
             return res.status(500).json({ message: 'An error occurred while updating the offers.' });
         }
-        
+    db.query('UPDATE earnings SET user_name = ? WHERE user_name = ?', [username,user], (error) => {
+        if (error) {
+            console.log(error);
+            return res.status(500).json({ message: 'An error occurred while updating the offers.' });
+        }
+    
     db.query('UPDATE archived_offers SET discount_hunter = ? WHERE discount_hunter = ?', [username,user], (error) => {
         if (error) {
             console.log(error);
@@ -46,6 +56,7 @@ exports.change = async (req, res, next) => {
         
         return res.status(200).json({message: 'users , offers and archived_offers Updated.'})
     })
+    
 })
 })
-}
+})})}

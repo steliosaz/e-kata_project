@@ -10,8 +10,18 @@ const cookieParser = require('cookie-parser');
 const cron = require('node-cron');
 const CircularJSON = require('circular-json');
 const { adminAuthMiddleware, userAuthMiddleware } = require('./auth/auth');
+const { offers_expired } = require('./user/offers_expired');
 
-
+//check and deleteFunction
+function checkAndDeleteExpiredOffers(){
+  const currentDate = new Date().toISOString().split('T')[0];  // Get today's date in YYYY-MM-DD format
+  console.log('currentDate',currentDate)
+  offers_expired(currentDate)
+}
+cron.schedule('0 0 0 1 * *', () => {
+  console.log('Running checkAndDeleteExpiredOffers at midnight the first day of the month.');
+  checkAndDeleteExpiredOffers();
+});
 //token function
 
 // Your tokens_crafter function without the scheduling and isLastDayOfMonth() check
@@ -31,7 +41,7 @@ function tokens_crafter() {
           total_users += 1;
       });
       
-      let all_tokens = total_users * 100;
+      let all_tokens = (total_users - 1) * 100;
       let token_value_per_score = (0.8 * all_tokens) / total_score;
       console.log('total_score', total_score);
       console.log('total_users', total_users);
@@ -73,19 +83,9 @@ function tokens_crafter() {
 })
   
 }
-// Schedule the function to run at midnight on the last day of the month (every month)
-cron.schedule('0 0 28-31 * *', () => {
-  // Check if it's the last day of the month before executing the function
-  const today = new Date();
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  
-  if (today.getDate() === lastDayOfMonth) {
-      console.log('Running tokens_crafter on the last day of the month at midnight.');
-      tokens_crafter();
-  }
-  else{
-    console.log('not crafting day')
-  }
+cron.schedule('0 0 0 1 * *', () => {
+  console.log('Running tokens_crafter at midnight the first day of the month.');
+  tokens_crafter();
 });
 
 // initializations

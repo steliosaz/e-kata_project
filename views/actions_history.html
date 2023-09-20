@@ -1,48 +1,124 @@
+<!DOCTYPE html>
 <html>
-    <head>
-    </head>
+
+<head>
+    <style>
+       /* General table styling */
+ /* Table Styles */
+ 
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 30px 0;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+  text-align: left;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Table Header */
+th {
+  background-color: #1F2F38;
+  color: white;
+  padding: 15px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Table Body */
+tbody tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+/* Table Cells */
+td {
+  padding: 15px;
+  font-size: 16px;
+}
+
+/* Hover Effects */
+tbody tr:hover {
+  background-color: #d4edda;
+  box-shadow: 0 0 15px rgba(0, 128, 0, 0.2);
+}
+    </style>
+</head>
+
+<body>
+     <!-- Page title with green background -->
+<h2 class="page-title" style="text-align: center;">Action's History</h2>
+
+
+     <!-- Table B -->
+     <div class="table-container">
+         <table>
+             <thead>
+                <tr>
+                
+                </tr>
+             </thead>
+             <tbody>
+                 <!-- Table rows will be generated dynamically using JavaScript -->
+             </tbody>
+         </table>
+     </div>
     <script>
-        
         function generateTable(data) {
-            // Create table headers
-            let tableHTML = `
-                <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif;">
-                    <thead style="background-color: #f2f2f2;">
-                        <tr>
-                            <th style="padding: 10px; border: 1px solid #dddddd;">Product</th>
-                            <th style="padding: 10px; border: 1px solid #dddddd;">Offer Value</th>
-                            <th style="padding: 10px; border: 1px solid #dddddd;">Offers Date</th>
-                            <th style="padding: 10px; border: 1px solid #dddddd;">Action Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+            console.log(data)
+    // Create table headers
+    let tableHTML = `
+        <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif;">
+            <thead style="background-color: #f2f2f2;">
+                <tr>
+                    <th style="padding: 10px; border: 1px solid #dddddd;">Image</th>
+                    <th style="padding: 10px; border: 1px solid #dddddd;">Product</th>
+                    <th style="padding: 10px; border: 1px solid #dddddd;">Offer Value</th>
+                    <th style="padding: 10px; border: 1px solid #dddddd;">Action Date</th>
+                    <th style="padding: 10px; border: 1px solid #dddddd;">Action Type</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
-            // Populate table with data
-            data.forEach((row, index) => {
-                let parts = row.action_date.split('T');
-                let firstPart = parts[0];
-                let rowColor = index % 2 === 0 ? "#f2f2f2" : "#ffffff";
-                tableHTML += `
-                    <tr style="background-color: ${rowColor};">
-                        <td style="padding: 10px; border: 1px solid #dddddd;">${row.product_name}</td>
-                        <td style="padding: 10px; border: 1px solid #dddddd;">${row.offer_value}</td>
-                        <td style="padding: 10px; border: 1px solid #dddddd;">${row.action_date.split('T')[0]}</td>
-                        <td style="padding: 10px; border: 1px solid #dddddd;">${firstPart}</td>
-                    </tr>
-                `;
-            });
+    // Populate table with data
+    data.forEach((row, index) => {
+        let parts = row.action_date.split('T');
+        let firstPart = parts[0];
+        let rowColor = index % 2 === 0 ? "#f2f2f2" : "#ffffff";
 
-            tableHTML += `
-                    </tbody>
-                </table>
-            `;
+        // Display "Like" or "Dislike" based on the "action_type" column
+        let likeOrDislike = row.action_type;
 
-            return tableHTML;
-        }
+        tableHTML += `
+            <tr style="background-color: ${rowColor};">
+                <td><img src="${row.product_path}"width="50" height="50"></td>
+                <td style="padding: 10px; border: 1px solid #dddddd;">${row.product_name}</td>
+                <td style="padding: 10px; border: 1px solid #dddddd;">${row.offer_value}</td>
+                <td style="padding: 10px; border: 1px solid #dddddd;">${firstPart}</td>
+                <td style="padding: 10px; border: 1px solid #dddddd;">
+                ${likeOrDislike === 'like' ? '<img src="icons\\png-clipart-like-button-social-media-facebook-messenger-speak-listen-apply-blue-angle-thumbnail.png" alt="Like" width="50" height="50">' : ''}
+                ${likeOrDislike === 'dislike' ? '<img src="icons\\dislike_image.png" alt="Dislike" width="50" height="50">' : ''}
+                </td>
+            </tr>
+        `;
+    });
 
-        let decodedid ;
-        let user ;
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+
+    return tableHTML;
+}
+
+
+        let decodedid;
+        let user;
         async function find_user() {
             const response = await fetch(`/api/id`);
             const users_info = await response.json();
@@ -52,19 +128,19 @@
             const usernamejson = await usernameResponse.json();
             user = usernamejson[0].username;
         }
-        
-        function offers_made(){
-            console.log('offers made triggered')
-            console.log('decodedid2',decodedid)
-            fetch(`/api/get_actions?user=${user}`)
-            .then(response => response.json())
-            .then(offers_history => {
-                console.log('offers_history',offers_history)
-                const table = generateTable(offers_history);
 
-                // Add table to the body or some container in your HTML (for example)
-                document.body.innerHTML += table;
-            });
+        function offers_made() {
+            console.log('offers made triggered')
+            console.log('decodedid2', decodedid)
+            fetch(`/api/get_actions?user=${user}`)
+                .then(response => response.json())
+                .then(offers_history => {
+                    console.log('offers_history', offers_history)
+                    const table = generateTable(offers_history);
+
+                    // Add table to the body or some container in your HTML (for example)
+                    document.body.innerHTML += table;
+                });
         }
 
         async function main() {
@@ -72,6 +148,8 @@
             offers_made();
         }
 
-main();
-    </script>   
+        main();
+    </script>
+</body>
+
 </html>

@@ -4,7 +4,7 @@ exports.get_actions = async (req, res, next) => {
     const { user } = req.query; // Assuming product_id is a route parameter
     
     const query = `
-    SELECT actions.*, product.name AS product_name
+    SELECT actions.*, product.name AS product_name, product.path AS product_path
     FROM actions
     INNER JOIN product ON actions.product_id = product.id
     WHERE actions.user_name = ?`;

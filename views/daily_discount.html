@@ -4,9 +4,9 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     </head>
     <body>
-        <canvas id="myChart" width="400" height="400"></canvas>
-        <button id="prevButton">Future DatesPast Dates</button>
-        <button id="nextButton">Future Dates</button>
+        <canvas id="myChart" width="400" height="200" style="width: 25px; height: 50px;"></canvas>
+        <button id="prevButton">Future Dates</button>
+        <button id="nextButton">Past Dates</button>
     <script>
         const today = new Date();
         const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -325,6 +325,8 @@ document.getElementById('nextButton').addEventListener('click', () => {
             }
             }
         
+            let result = [];
+            let dates =[];
             filt_offers.forEach(offer=>{
                 const prices = offer.prices
                 for (let i = prices.length -1 ; i>= 0; i--){
@@ -336,7 +338,6 @@ document.getElementById('nextButton').addEventListener('click', () => {
                 offer.averages.push(offer.offer_value - sum/7)
                 }
             })
-
             for (let i = 0; i < filt_offers[0].averages.length; i++) {
                 let sum = 0; // Initialize a variable to store the sum of averages at each position
                 
@@ -345,8 +346,64 @@ document.getElementById('nextButton').addEventListener('click', () => {
                 }
                 
                 result.push(sum); // Push the sum into the result array
-
             }
+            
+            for (let i=0; i < filt_offers[0].prices.length; i++){
+                dates.push(filt_offers[0].prices[i].date.substring(0, 10))
+            }
+
+            let startIndex = 0; // Index of the first visible data point
+            const dates1 = dates.reverse();
+            const ctx = document.getElementById('myChart').getContext('2d');
+            function updateChart() {
+            const endIndex = startIndex + 7 ; // Show the last 7 values
+            
+            
+            console.log('dates1',dates1)
+            const visibleDates = dates1.slice(startIndex, endIndex);
+            
+            const visibleResults = result.slice(startIndex, endIndex);
+
+            myChart.data.labels = visibleDates;
+            myChart.data.datasets[0].data = visibleResults;
+            console.log('visibledates',visibleDates)
+            console.log('visibleResults',visibleResults)
+            myChart.update();
+        }
+            
+            const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // X-axis labels as JavaScript Date objects
+                datasets: [{
+                    label: 'Result Data',
+                    data: [], // Y-axis data from the 'result' array
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            }
+        });
+         // Initial chart display
+         updateChart();
+        console.log('startindexdasd',startIndex)
+// Button event listeners for navigation
+document.getElementById('prevButton').addEventListener('click', () => {
+    console.log('start index',startIndex)
+    if (startIndex > 0) {
+        startIndex -= 7;
+        updateChart();
+    }
+});
+
+document.getElementById('nextButton').addEventListener('click', () => {
+    console.log('nextbutton startindex',startIndex)
+    if (startIndex + 7 < dates.length) {
+        startIndex += 7;
+        console.log('nextbutton startindex2',startIndex)
+        updateChart();
+    }
+});
 } else {
         console.log('Please select a category.');
     }

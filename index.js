@@ -11,6 +11,83 @@ const cron = require('node-cron');
 const CircularJSON = require('circular-json');
 const { adminAuthMiddleware, userAuthMiddleware } = require('./auth/auth');
 
+
+//token function
+
+// Your tokens_crafter function without the scheduling and isLastDayOfMonth() check
+function tokens_crafter() {
+  console.log("tokens crafter triggered");
+  
+  MapCreator().then(() => {
+  let total_score = 0;
+  let total_users = 0;
+  const mapObj = Object.fromEntries(userMap);
+  fetch(`/api/get_users`)
+  .then(response => response.json())
+  .then(all_users => {
+
+      all_users.forEach(user => {
+          total_score += user.monthly_score;
+          total_users += 1;
+      });
+      
+      let all_tokens = total_users * 100;
+      let token_value_per_score = (0.8 * all_tokens) / total_score;
+      console.log('total_score', total_score);
+      console.log('total_users', total_users);
+      console.log('token_value_per_score', token_value_per_score);
+
+      all_users.forEach(user => {
+        const tokens = Math.round(user.monthly_score * token_value_per_score);
+        user.tokens = tokens;  // Assigning the calculated tokens to the user object for logging or other purposes
+              
+        if (mapObj.hasOwnProperty(user.user_name)) {
+            // Append tokens at the end of existing array
+            mapObj[user.user_name].push(tokens);  
+        } else {
+            // Create a new array with tokens if the user does not exist in the map
+            mapObj[user.user_name] = [tokens];
+        }
+
+});
+      
+      console.log('mapObj',mapObj)
+      fetch('/api/tokens_crafter', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userMap: mapObj })
+      }).then(response => response.json())
+      .then(data => {
+      console.log(data);
+      })
+      .catch(error => {
+      console.log(error);
+      });
+
+  })
+  .catch(error => {
+      console.error('Error fetching users:', error);
+  });
+})
+  
+}
+// Schedule the function to run at midnight on the last day of the month (every month)
+cron.schedule('0 0 28-31 * *', () => {
+  // Check if it's the last day of the month before executing the function
+  const today = new Date();
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  
+  if (today.getDate() === lastDayOfMonth) {
+      console.log('Running tokens_crafter on the last day of the month at midnight.');
+      tokens_crafter();
+  }
+  else{
+    console.log('not crafting day')
+  }
+});
+
 // initializations
 const app = express();
 const port = process.env.PORT;

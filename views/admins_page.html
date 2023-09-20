@@ -1,262 +1,124 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Upload Products Data</title>
-  <style>
-    body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    padding: 20px;
-}
+    <meta charset="UTF-8">
+    <title>Four Containers</title>
+    <style>
+        /* Styles for title and logout button */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 1.5em;
+        }
 
-#leaderboard-table {
-    border-collapse: collapse;
-    width: 100%;
-    max-width: 600px;
-    margin: 20px auto;
-    background-color: #fff;
-    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-}
+        .logout-button {
+            cursor: pointer;
+            padding: 10px 20px;
+            border: none;
+            background-color: red;
+            color: white;
+        }
 
-#leaderboard-table th,
-#leaderboard-table td {
-    border: 1px solid #ddd;
-    padding: 8px 12px;
-    text-align: left;
-}
+        /* Main container that holds the four smaller containers */
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+            height: 100vh;
+        }
 
-#leaderboard-table th {
-    background-color: #4CAF50;
-    color: white;
-}
+        /* Individual containers */
+        .sub-container {
+            flex: 1;
+            width: 50%;
+            height: 50vh;
+            box-sizing: border-box;
+            margin-right : 10px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-#leaderboard-table tbody tr:hover {
-    background-color: #f5f5f5;
-}
+        /* The images inside the containers */
+        .sub-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
 
-button {
-    display: inline-block;
-    margin: 10px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #4CAF50;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-button:hover {
-    background-color: #45a049;
-}
-
-button:disabled {
-    background-color: #ddd;
-    cursor: not-allowed;
-}
-#pagination-buttons {
-    text-align: center; /* This will center the buttons */
-    margin-top: 20px; /* This provides spacing between the table and buttons */
-}
-  </style>
+        /* Hover text styling */
+        .sub-container:hover::before {
+            content: attr(data-hover-text);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1.5em;
+            transition: opacity 0.3s ease;
+        }
+    </style>
 </head>
 <body>
-  <a href="/logout">Logout</a>
-  <h1>Upload Products Data</h1>
-  <input type="file" id="file-input">
-  <button id="prevButton" style="display: none;">Previous</button>
-  <button id="nextButton" style="display: none;">Next</button>
+    
+     <!-- Header -->
+     <div class="header">
+        <div>Welcome, Mr. Admin</div>
+        <button id="logout-button" class="logout-button">Logout</button>
+    </div>
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- First Container -->
+        <div class="sub-container" data-hover-text="Maps" data-redirect-url="/redirectToMap">
+            <img src="/icons/maps_image.webp">
+            <p>Map</p>
+        </div>
+        
+        <!-- Second Container -->
+        <div class="sub-container" data-hover-text="Graphs" data-redirect-url="/redirectToGraphs">
+            <img src="/icons/graphs.jpg">
+            <p>Graphs</p>
+        </div>
 
-  <h1>Leaderboard</h1>
-  <table id="leaderboard-table">
-      <thead>
-          <tr>
-              <th>Username</th>
-              <th>Points Earned</th>
-              <th>Previous Month Tokens Earned</th>
-              <th>Overall Tokens Earned</th>
-          </tr>
-      </thead>
-      <tbody>
-          <!-- Rows will be populated here using JavaScript -->
-      </tbody>
-  </table>
+        <!-- Third Container -->
+        <div class="sub-container" data-hover-text="Upload" data-redirect-url="/upload_page">
+            <img src="/icons/upload.jpg">
+            <p>Upload</p>
+        </div>
 
-  <div id="pagination-buttons">
-      <button id="prev-btn">Previous</button>
-      <button id="next-btn">Next</button>
-  </div>
+        <!-- Fourth Container -->
+        <div class="sub-container" data-hover-text="LeaderBoard" data-redirect-url="/redirectToLeaderBoard">
+            <img src="/icons/leaderboard.jpg">
+            <p>LeaderBoard</p>
+        </div>
+    </div>
 </body>
-    
-  <script>
-    
-    document.getElementById("upload-btn").addEventListener("click", function() {
-        var fileInput = document.getElementById("file-input");
-        var file = fileInput.files[0];
-      
-        var reader = new FileReader();
-      
-        reader.onload = function(e) {
-          var contents = e.target.result;
-          var data = JSON.parse(contents);
-          // Use the data from the JSON file
-          fetch('http://localhost:3000/api/upload', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-        .then(response => response.json())
-        .then(data => {
-          // Handle the response from the server
-          console.log(data);
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-      
-          console.log(data);
-        };
-      
-        reader.onerror = function(e) {
-          console.error('Error:', e.target.error);
-        };
-        
-        reader.readAsText(file);
-      });
-      
-      let currentPage = 0; // This will track our current page. Starts from page 0.
-let userMap = new Map();
-async function MapCreator(){
-  const response = await fetch(`/api/get_users`);
-  const all_users = await response.json();
-
-  all_users.forEach(user => {
-    userMap.set(user.user_name, [user.overall_score, user.last_months_tokens, user.tokens_earned, user.monthly_score]);
-  });
-}
-function leaderboard() {
-    MapCreator().then(() => {
-    const sortedUsers = [...userMap.entries()].sort((a, b) => b[1][0] - a[1][0]);
-
-      displayLeaderboard(sortedUsers, currentPage);
-      
-      document.getElementById('prev-btn').addEventListener('click', function() {
-          if (currentPage > 0) {
-              currentPage--;
-              displayLeaderboard(sortedUsers, currentPage);
-          }
-      });
-
-      document.getElementById('next-btn').addEventListener('click', function() {
-          if ((currentPage + 1) * 10 < sortedUsers.length) {
-              currentPage++;
-              displayLeaderboard(sortedUsers, currentPage);
-          }
-      });
-    }).
-    catch(error => {
-    console.error('Error:', error);
-  })
-}
-      // Sort the map based on points in descending order
-
-      
-
-// Your tokens_crafter function without the scheduling and isLastDayOfMonth() check
-function tokens_crafter() {
-    console.log("tokens crafter triggered");
-    
-    MapCreator().then(() => {
-    let total_score = 0;
-    let total_users = 0;
-    const mapObj = Object.fromEntries(userMap);
-    fetch(`/api/get_users`)
-    .then(response => response.json())
-    .then(all_users => {
-
-        all_users.forEach(user => {
-            total_score += user.monthly_score;
-            total_users += 1;
-        });
-        
-        let all_tokens = total_users * 100;
-        let token_value_per_score = (0.8 * all_tokens) / total_score;
-        console.log('total_score', total_score);
-        console.log('total_users', total_users);
-        console.log('token_value_per_score', token_value_per_score);
-
-        all_users.forEach(user => {
-          const tokens = Math.round(user.monthly_score * token_value_per_score);
-          user.tokens = tokens;  // Assigning the calculated tokens to the user object for logging or other purposes
-                
-          if (mapObj.hasOwnProperty(user.user_name)) {
-              // Append tokens at the end of existing array
-              mapObj[user.user_name].push(tokens);  
-          } else {
-              // Create a new array with tokens if the user does not exist in the map
-              mapObj[user.user_name] = [tokens];
-          }
-
-});
-        
-        console.log('mapObj',mapObj)
-        fetch('/api/tokens_crafter', {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ userMap: mapObj })
-				}).then(response => response.json())
-				.then(data => {
-				console.log(data);
-				})
-				.catch(error => {
-				console.log(error);
-				});
-
-    })
-    .catch(error => {
-        console.error('Error fetching users:', error);
+<script>
+    document.getElementById('logout-button').addEventListener('click', function() {
+    window.location.href = '/logout';
     });
-  })
+
+    // Redirect on click of a sub-container
+    document.querySelectorAll('.sub-container').forEach((container) => {
+            container.addEventListener('click', function() {
+                const redirectTo = this.getAttribute('data-redirect-url');
+                window.location.href = redirectTo;
+            });
+        });
     
-}
-
-// Schedule your tokens_crafter function to run at midnight on the 1st day of every month
-// '0 0 1 * *' means "At 00:00 on day-of-month 1."
-//cron.schedule('0 0 1 * *', () => {
-    //tokens_crafter();
-//});
-
-
-function displayLeaderboard(sortedUsers, page) {
-    const tableBody = document.getElementById('leaderboard-table').querySelector('tbody');
-    // Clear current rows
-    tableBody.innerHTML = '';
-
-    const start = page * 10;
-    const end = start + 10;
-
-    for (let i = start; i < end && i < sortedUsers.length; i++) {
-        let user = sortedUsers[i];
-        let row = tableBody.insertRow();
-        let usernameCell = row.insertCell(0);
-        let pointsCell = row.insertCell(1);
-        let tokensCell = row.insertCell(2);
-        let pr_months_tokensCell = row.insertCell(3);
-        
-        usernameCell.textContent = user[0];
-        pointsCell.textContent = user[1][0];
-        tokensCell.textContent = user[1][1];
-        pr_months_tokensCell.textContent = user[1][2];
-    }
-}
-
-// Invoke the leaderboard function
-leaderboard();
-
-    </script>
-</body>
+</script>
 </html>

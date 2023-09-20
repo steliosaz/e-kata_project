@@ -93,8 +93,7 @@
     <option value="December">December</option>
 </select>
 <div id="canvasIntro">
-    <h1>Your Chart Title</h1>
-    <p>Description or introductory text for your chart.</p>
+    <h1>Offers Chart</h1>
     
 </div>
 <canvas id="offersChart" width="400" height="400"></canvas>
@@ -163,7 +162,6 @@ function offer_printer(selectedYearMonth) {
     fetch(`/api/get_all_offers`)
         .then(response => response.json())
         .then(alloffers => {
-            //console.log(alloffers);
 
             // Modify the start_date for each offer in the alloffers array
             const modifiedOffers = alloffers.map(offer => {
@@ -173,7 +171,7 @@ function offer_printer(selectedYearMonth) {
                     yymm: offer.start_date.slice(0, 7)
                 };
             });
-            //console.log(modifiedOffers);
+            
         // Filter the offers to see if any match the selectedYearMonth
         const matchingOffers = modifiedOffers.filter(offer => offer.yymm === selectedYearMonth);
             
@@ -182,10 +180,10 @@ function offer_printer(selectedYearMonth) {
                 matchingOffers.forEach(m_offer  => {
                     console.log(m_offer.yymmdd.substring(m_offer.yymmdd.length - 2))
                     if (numbers.includes(m_offer.yymmdd.substring(m_offer.yymmdd.length - 2))){
-                        result[m_offer.yymmdd.substring(m_offer.yymmdd.length - 1)] += 1;
+                        result[(m_offer.yymmdd.substring(m_offer.yymmdd.length - 1))-1] += 1;
                     }
                     else{
-                    result[m_offer.yymmdd.substring(m_offer.yymmdd.length - 2)] += 1;
+                    result[(m_offer.yymmdd.substring(m_offer.yymmdd.length - 2))-1] += 1;
                     
                     }
                 });
@@ -202,7 +200,7 @@ function offer_printer(selectedYearMonth) {
 
 
 function drawChart(offers) {
-    console.log('offers:',offers)
+    
     const ctx = document.getElementById('offersChart').getContext('2d');
     const labels = offers.map(offer => offer.start_date || "Unnamed Offer");  // Assumes each offer has a 'name'. Modify as needed.
     const data = offers.map(offer => offer.product_id);  // Replace 'value' with the property of the offer you want to graph.

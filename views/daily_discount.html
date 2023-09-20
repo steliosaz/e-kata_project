@@ -1,5 +1,12 @@
 <html>
-    <head></head>
+    <head>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    </head>
+    <body>
+        <canvas id="myChart" width="400" height="400"></canvas>
+        <button id="prevButton">Future DatesPast Dates</button>
+        <button id="nextButton">Future Dates</button>
     <script>
         const today = new Date();
         const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -109,7 +116,7 @@ let finalObject = {};
     fetch(`/api/2fetchtrial`)
     .then(response => response.json())
     .then(fetchedOffers => {
-        console.log('fetchCategories,',fetchedOffers)
+        
         const groupedData = fetchedOffers.reduce((acc, obj) => {
         const { id, ...rest } = obj;
 
@@ -146,27 +153,10 @@ let finalObject = {};
     let sevenDaysBeforeMap = new Map(); 
     let pricesArray =[];
     fetchCategories();
+
+
+    
     function handleButtonClick() {
-        let sum = 0;
-        
-        const today = new Date();
-        const formattedDate = formatDate(today);  // Format today's date
-
-        // Subtract 7 days to get the start date
-        const startDate = subtractDays(stringToDate(formattedDate), 7);
-
-        // Array to store the dates of the last 7 days
-        const lastSevenDays = [];
-
-        // Loop through each day from 7 days ago until today (exclusive)
-        for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(startDate.getTime());
-            currentDay.setDate(startDate.getDate() + i);
-            lastSevenDays.push(formatDate(currentDay));
-        }
-
-        console.log(formattedDate);       // Should print something like "2023-08-18"
-        console.log(lastSevenDays);      // Should print an array with dates from "2023-08-11" to "2023-08-17"
                 
         const selectedCategory = document.getElementById('categoryDropdown').value;
         const selectedSubcategoryDropdown = document.getElementById('subcategoryDropdown');
@@ -177,9 +167,9 @@ let finalObject = {};
         console.log('Only category selected:', selectedCategory);
         for (const key in finalObject) {
             finalObject[key].prices =[];
+            finalObject[key].averages =[];
+        
             if (finalObject.hasOwnProperty(key)) {  // This line is to filter out properties from the object's prototype
-               
-               // console.log('Value:', finalArray[0][key]);
                 
                 for (const row in finalObject[key]){
                    
@@ -199,6 +189,7 @@ let finalObject = {};
                    finalObject[key].start_date = finalObject[key][0].start_date
                    finalObject[key].stock = finalObject[key][0].stock
                    finalObject[key].subcategory = finalObject[key][0].subcategory
+                   
                     
                 }
                  // filter the finalObject
@@ -206,61 +197,101 @@ let finalObject = {};
             if( finalObject[key].category === selectedCategory){
                 console.log('found offer with the category selected')
                 filt_offers.push(finalObject[key])
+                
             }
             }
             }
-        
-        filt_offers.forEach(f_offer => {
-            console.log('f_offer',f_offer)
-            let counter =0;
-            sevenDaysBeforeMap.set(f_offer.id,[f_offer.offer_value,0])
-            f_offer.prices.forEach(row => {
-                const row_date = row.date.substring(0, 10);
-                if (lastSevenDays.includes(row_date)) {
-                    console.log('This date exists in the last 7 days:', row_date);
-                    sum += row.value;
-                    counter += 1;
-                    if (counter === 7) {
-                        sevenDaysAveragePrice = sum/7
-                        console.log('sum is :',sum)
-                        console.log('sum / 7 :',sum/7)
-                        console.log('f_offer.offer_value',f_offer.offer_value)
-                        sevenDaysBeforeMap.set(f_offer.id,f_offer.offer_value - sevenDaysAveragePrice)
-                    }  
-
+            
+            let result = [];
+            let dates =[];
+            filt_offers.forEach(offer=>{
+                const prices = offer.prices
+                for (let i = prices.length -1 ; i>= 0; i--){
+                    let sum = 0;
+                    for(let j = i ; j >= Math.max(0, i - 6) ; j--){
+                        sum += prices[j].value
                 }
                 
-                const offerDateObj = new Date(row_date);
-        });
-        console.log('map',sevenDaysBeforeMap)
+                offer.averages.push(offer.offer_value - sum/7)
+                }
+            })
+            for (let i = 0; i < filt_offers[0].averages.length; i++) {
+                let sum = 0; // Initialize a variable to store the sum of averages at each position
+                
+                for (let j = 0; j < filt_offers.length; j++) {
+                    sum += filt_offers[j].averages[i] / filt_offers.length; // Sum the averages at the same position
+                }
+                
+                result.push(sum); // Push the sum into the result array
+            }
+            
+            for (let i=0; i < filt_offers[0].prices.length; i++){
+                dates.push(filt_offers[0].prices[i].date.substring(0, 10))
+            }
 
-        let sumOfValues = 0;
-        let numberOfKeys = 0;
+            let startIndex = 0; // Index of the first visible data point
+            const dates1 = dates.reverse();
+            const ctx = document.getElementById('myChart').getContext('2d');
+            function updateChart() {
+            const endIndex = startIndex + 7 ; // Show the last 7 values
+            
+            
+            console.log('dates1',dates1)
+            const visibleDates = dates1.slice(startIndex, endIndex);
+            
+            const visibleResults = result.slice(startIndex, endIndex);
 
-        // Sum the values and count the keys
-        for (const value of sevenDaysBeforeMap.values()) {
-        sumOfValues += value;
-        numberOfKeys++;
+            myChart.data.labels = visibleDates;
+            myChart.data.datasets[0].data = visibleResults;
+            console.log('visibledates',visibleDates)
+            console.log('visibleResults',visibleResults)
+            myChart.update();
         }
-
-        // Calculate the average
-        let average_category_discount = numberOfKeys > 0 ? sumOfValues / numberOfKeys : 0;
-
-        console.log('The sum of values is:', sumOfValues);
-        console.log('The number of keys is:', numberOfKeys);
-        console.log('The average is:', average_category_discount);
-        
+            
+            const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // X-axis labels as JavaScript Date objects
+                datasets: [{
+                    label: 'Result Data',
+                    data: [], // Y-axis data from the 'result' array
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            }
+        });
+         // Initial chart display
+         updateChart();
+        console.log('startindexdasd',startIndex)
+// Button event listeners for navigation
+document.getElementById('prevButton').addEventListener('click', () => {
+    console.log('start index',startIndex)
+    if (startIndex > 0) {
+        startIndex -= 7;
+        updateChart();
+    }
 });
+
+document.getElementById('nextButton').addEventListener('click', () => {
+    console.log('nextbutton startindex',startIndex)
+    if (startIndex + 7 < dates.length) {
+        startIndex += 7;
+        console.log('nextbutton startindex2',startIndex)
+        updateChart();
+    }
+});
+            
 }
+
  else if (selectedCategory && selectedSubcategory) {
         // Both category and subcategory are selected
         console.log('Category and subcategory selected:', selectedCategory, selectedSubcategory);
-        console.log('finalObject',finalObject)
+        
         for (const key in finalObject) {
             finalObject[key].prices =[];
+            finalObject[key].averages =[];
             if (finalObject.hasOwnProperty(key)) {  // This line is to filter out properties from the object's prototype
-               
-               // console.log('Value:', finalArray[0][key]);
                 
                 for (const row in finalObject[key]){
                    
@@ -284,59 +315,42 @@ let finalObject = {};
                 }
                  // filter the finalObject
             finalObject[key].splice(0, finalObject[key].length);
-            if( finalObject[key].category === selectedCategory){
-                console.log('found offer with the category selected')
+            if( finalObject[key].category === selectedCategory && finalObject[key].subcategory === selectedSubcategory){
+                console.log('Found offer with the category selected')
                 filt_offers.push(finalObject[key])
             }
+            else{
+                console.log('No offer matching to your selections')
+            }
             }
             }
         
-        filt_offers.forEach(f_offer => {
-            console.log('f_offer',f_offer)
-            let counter =0;
-            sevenDaysBeforeMap.set(f_offer.id,[f_offer.offer_value,0])
-            f_offer.prices.forEach(row => {
-                const row_date = row.date.substring(0, 10);
-                if (lastSevenDays.includes(row_date)) {
-                    console.log('This date exists in the last 7 days:', row_date);
-                    sum += row.value;
-                    counter += 1;
-                    if (counter === 7) {
-                        sevenDaysAveragePrice = sum/7
-                        console.log('sum is :',sum)
-                        console.log('sum / 7 :',sum/7)
-                        console.log('f_offer.offer_value',f_offer.offer_value)
-                        sevenDaysBeforeMap.set(f_offer.id,f_offer.offer_value - sevenDaysAveragePrice)
-                    }  
-
+            filt_offers.forEach(offer=>{
+                const prices = offer.prices
+                for (let i = prices.length -1 ; i>= 0; i--){
+                    let sum = 0;
+                    for(let j = i ; j >= Math.max(0, i - 6) ; j--){
+                        sum += prices[j].value
                 }
                 
-                const offerDateObj = new Date(row_date);
-        });
-        console.log('map',sevenDaysBeforeMap)
+                offer.averages.push(offer.offer_value - sum/7)
+                }
+            })
 
-        let sumOfValues = 0;
-        let numberOfKeys = 0;
+            for (let i = 0; i < filt_offers[0].averages.length; i++) {
+                let sum = 0; // Initialize a variable to store the sum of averages at each position
+                
+                for (let j = 0; j < filt_offers.length; j++) {
+                    sum += filt_offers[j].averages[i] / filt_offers.length; // Sum the averages at the same position
+                }
+                
+                result.push(sum); // Push the sum into the result array
 
-        // Sum the values and count the keys
-        for (const value of sevenDaysBeforeMap.values()) {
-        sumOfValues += value;
-        numberOfKeys++;
-        }
-
-        // Calculate the average
-        let average_category_discount = numberOfKeys > 0 ? sumOfValues / numberOfKeys : 0;
-
-        console.log('The sum of values is:', sumOfValues);
-        console.log('The number of keys is:', numberOfKeys);
-        console.log('The average is:', average_category_discount);
-        
-});
+            }
 } else {
         console.log('Please select a category.');
     }
 }
-console.log('priceDifferenceMap',priceDifferenceMap)
 
 
 
@@ -356,4 +370,5 @@ function formatDate(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 </script>
+</body>
 </html>

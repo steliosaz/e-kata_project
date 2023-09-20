@@ -35,6 +35,22 @@ app.get('/redirectToMap', (req, res) => {
   res.sendFile(__dirname + '/views/map.html');
 });
 
+app.get('/redirectToGraphs', (req, res) => {
+  res.sendFile(__dirname + '/views/graphs_page.html');
+});
+
+app.get('/redirectToOffersByMonth', (req, res) => {
+  res.sendFile(__dirname + '/views/offers_by_month.html');
+});
+
+app.get('/redirectToDailyDiscounts', (req, res) => {
+  res.sendFile(__dirname + '/views/daily_discount.html');
+});
+
+app.get('/redirectToLeaderBoard', (req, res) => {
+  res.sendFile(__dirname + '/views/leaderboard.html');
+});
+
 app.get('/rate_offers', (req, res) => {
   const shopname = req.query.ShopName;
   res.sendFile(__dirname + '/views/rate_offers.html');

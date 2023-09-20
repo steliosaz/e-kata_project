@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaderboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        .leaderboard-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .user-name {
+            font-weight: bold;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination-button {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+        .pagination-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="leaderboard-container">
+        <h1>Leaderboard</h1>
+        <div id="leaderboard"></div>
+        <div class="pagination">
+            <button id="prev-btn" class="pagination-button">Previous</button>
+            <button id="next-btn" class="pagination-button">Next</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        let userMap = new Map();
+
+        async function MapCreator() {
+            const response = await fetch(`/api/get_users`);
+            const all_users = await response.json();
+
+            all_users.forEach(user => {
+                userMap.set(user.user_name, [user.overall_score, user.last_months_tokens, user.tokens_earned, user.monthly_score]);
+            });
+        }
+
+        function displayLeaderboard(sortedUsers, page) {
+            const leaderboardContainer = document.getElementById('leaderboard');
+            leaderboardContainer.innerHTML = '';
+
+            const startIndex = page * 10;
+            const endIndex = Math.min((page + 1) * 10, sortedUsers.length);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const user = sortedUsers[i];
+                const userName = user[0];
+                const userStats = user[1];
+
+                const userRow = document.createElement('div');
+                userRow.classList.add('user-row');
+                userRow.innerHTML = `
+                    <span class="user-name">${userName}</span>
+                    <span>${userStats[0]}</span>
+                `;
+
+                leaderboardContainer.appendChild(userRow);
+            }
+        }
+
+        function leaderboard() {
+            MapCreator().then(() => {
+                const sortedUsers = [...userMap.entries()].sort((a, b) => b[1][0] - a[1][0]);
+
+                displayLeaderboard(sortedUsers, currentPage);
+
+                document.getElementById('prev-btn').addEventListener('click', function () {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        displayLeaderboard(sortedUsers, currentPage);
+                    }
+                });
+
+                document.getElementById('next-btn').addEventListener('click', function () {
+                    if ((currentPage + 1) * 10 < sortedUsers.length) {
+                        currentPage++;
+                        displayLeaderboard(sortedUsers, currentPage);
+                    }
+                });
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        leaderboard();
+    </script>
+</body>
+</html>
